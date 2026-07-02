@@ -1,0 +1,53 @@
+import Link from "next/link";
+import { requireOnboardedUser } from "@/lib/session";
+import { updateProfile } from "@/lib/actions/profile";
+import { ProfileForm } from "@/components/profile/ProfileForm";
+import { SignOutButton } from "@/components/auth/SignOutButton";
+import { PixelCard } from "@/components/ui/PixelCard";
+import { PixelButton } from "@/components/ui/PixelButton";
+
+function toDateInput(value: Date | string | null | undefined): string | null {
+  if (!value) return null;
+  return new Date(value).toISOString().slice(0, 10);
+}
+
+export default async function SettingsPage() {
+  const user = await requireOnboardedUser();
+
+  return (
+    <main className="mx-auto w-full max-w-lg px-6 py-12 flex flex-col gap-8">
+      <header className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl text-primary">Settings</h1>
+        <Link href="/">
+          <PixelButton variant="ghost" size="sm">
+            ← Home
+          </PixelButton>
+        </Link>
+      </header>
+
+      <PixelCard>
+        <h2 className="text-sm mb-5">Profile</h2>
+        <ProfileForm
+          action={updateProfile}
+          submitLabel="Save changes"
+          defaults={{
+            firstName: user.firstName ?? null,
+            lastName: user.lastName ?? null,
+            displayName: user.displayName ?? user.name ?? "",
+            birthday: toDateInput(user.birthday),
+            icon: user.icon ?? null,
+            theme: user.theme === "DARK" ? "DARK" : "LIGHT",
+          }}
+        />
+      </PixelCard>
+
+      <PixelCard>
+        <h2 className="text-sm mb-4">Account</h2>
+        <p className="text-muted mb-4">
+          Signed in as <span className="text-ink">{user.email}</span>
+        </p>
+        <SignOutButton />
+      </PixelCard>
+    </main>
+  );
+}

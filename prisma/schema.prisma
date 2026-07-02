@@ -1,0 +1,215 @@
+// Saive schema — see DESIGN.md §3 for the model overview.
+// Auth tables (Session/Account/Verification) and better-auth wiring are added in Step 2.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  OWNER
+  COLLABORATOR
+  VIEWER
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+}
+
+enum Theme {
+  LIGHT
+  DARK
+}
+
+// Core user. Fields `name`, `email`, `emailVerified`, `image` are the better-auth
+// defaults; the rest are our app profile fields (collected at onboarding).
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  name          String?
+  image         String?
+  firstName     String?
+  lastName      String?
+  displayName   String?
+  birthday      DateTime?
+  icon          String? // emoji
+  theme         Theme     @default(LIGHT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // better-auth relations
+  sessions Session[]
+  accounts Account[]
+
+  // app relations
+  ownedLists  List[]           @relation("ListOwner")
+  memberships ListMembership[]
+  invitesSent ListInvite[]     @relation("InviteSender")
+  tags        Tag[]
+  comments    Comment[]
+}
+
+// ---- better-auth managed models (generated via @better-auth/cli) ----
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String? // hashed; email/password credential lives here, not on User
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model List {
+  id          String   @id @default(uuid())
+  name        String
+  description String   @default("")
+  icon        String   @default("📁") // emoji
+  ownerId     String
+  owner       User     @relation("ListOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships ListMembership[]
+  invites     ListInvite[]
+  bookmarks   Bookmark[]
+  comments    Comment[]
+
+  @@index([ownerId])
+}
+
+// Join of user <-> list carrying the role and this user's personal ordering.
+model ListMembership {
+  id        String   @id @default(uuid())
+  listId    String
+  list      List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role
+  position  Int      @default(0) // per-user home-page order
+  createdAt DateTime @default(now())
+
+  @@unique([listId, userId])
+  @@index([userId])
+}
+
+// Pending/accepted invitation, keyed by email so we can invite non-users.
+model ListInvite {
+  id          String       @id @default(uuid())
+  listId      String
+  list        List         @relation(fields: [listId], references: [id], onDelete: Cascade)
+  email       String
+  role        Role
+  token       String       @unique @default(uuid())
+  status      InviteStatus @default(PENDING)
+  invitedById String
+  invitedBy   User         @relation("InviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+
+  @@unique([listId, email])
+  @@index([email])
+}
+
+model Bookmark {
+  id          String   @id @default(uuid())
+  listId      String
+  list        List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  urls        String[] // first entry is the primary "open" / original source link
+  images      String[] @default([]) // extracted photo URLs (remote)
+  notes       String   @default("")
+  location    String   @default("")
+  rating      Int      @default(0) // 0–5
+  visited     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tags     BookmarkTag[]
+  comments Comment[]
+
+  @@index([listId])
+}
+
+// User-scoped tag; shared across all of the user's lists.
+model Tag {
+  id        String   @id @default(uuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  bookmarks BookmarkTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model BookmarkTag {
+  bookmarkId String
+  bookmark   Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+  tagId      String
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([bookmarkId, tagId])
+  @@index([tagId])
+}
+
+// Comment on EITHER a bookmark OR a list — exactly one of bookmarkId/listId is set.
+// (Enforced in app logic + a DB check constraint added with the migration.)
+model Comment {
+  id         String    @id @default(uuid())
+  authorId   String
+  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  value      String
+  createdAt  DateTime  @default(now())
+  bookmarkId String?
+  bookmark   Bookmark? @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+  listId     String?
+  list       List?     @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@index([bookmarkId])
+  @@index([listId])
+  @@index([authorId])
+}
