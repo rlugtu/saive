@@ -9,9 +9,11 @@ import { PixelCard } from "@/components/ui/PixelCard";
 export function CreateBookmarkPanel({
   listId,
   tagSuggestions,
+  listTags,
 }: {
   listId: string;
   tagSuggestions: string[];
+  listTags: string[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -38,6 +40,7 @@ export function CreateBookmarkPanel({
         action={createBookmark.bind(null, listId)}
         submitLabel="Create"
         tagSuggestions={tagSuggestions}
+        existingTags={listTags}
       />
     </PixelCard>
   );

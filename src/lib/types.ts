@@ -16,6 +16,7 @@ export type BookmarkCardData = {
   id: string;
   name: string;
   description: string;
+  image: string | null; // first extracted photo, if any
   rating: number;
   visited: boolean;
   tags: { id: string; name: string }[];

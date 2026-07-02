@@ -17,17 +17,28 @@ export function BookmarkCard({
   return (
     <Link
       href={`/lists/${listId}/bookmarks/${bookmark.id}`}
-      className="pixel-box bg-panel flex flex-col gap-3 p-4"
+      className="pixel-box bg-panel flex w-full min-w-0 flex-col gap-3 p-4"
     >
       {listLabel && (
-        <span className="text-muted text-xs truncate">
+        <span className="text-muted text-xs truncate min-w-0">
           in {listLabel.icon} {listLabel.name}
         </span>
       )}
+      {bookmark.image && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={bookmark.image}
+          alt=""
+          loading="lazy"
+          className="pixel-box-sm bg-panel block h-36 w-full max-w-full object-cover"
+        />
+      )}
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-pixel text-xs truncate">{bookmark.name}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-pixel text-xs truncate min-w-0 flex-1">
+              {bookmark.name}
+            </span>
             {bookmark.visited && (
               <PixelBadge tone="success" className="shrink-0">
                 ✔
@@ -46,9 +57,11 @@ export function BookmarkCard({
       </div>
 
       {bookmark.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex min-w-0 flex-wrap gap-1.5">
           {bookmark.tags.map((t) => (
-            <PixelBadge key={t.id}>{t.name}</PixelBadge>
+            <PixelBadge key={t.id} className="max-w-full break-all">
+              {t.name}
+            </PixelBadge>
           ))}
         </div>
       )}

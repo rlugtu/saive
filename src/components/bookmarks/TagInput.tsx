@@ -13,14 +13,21 @@ export function TagInput({
   name = "tags",
   defaultValue = [],
   suggestions = [],
+  existing = [],
 }: {
   name?: string;
   defaultValue?: string[];
   suggestions?: string[];
+  /** Tags already used in this list, offered as clickable quick-add chips. */
+  existing?: string[];
 }) {
   const [tags, setTags] = useState<string[]>(defaultValue);
   const [draft, setDraft] = useState("");
   const listId = useId();
+
+  const quickAdd = existing.filter(
+    (t) => !tags.some((tag) => tag.toLowerCase() === t.toLowerCase()),
+  );
 
   function addTag(raw: string) {
     const value = raw.trim();
@@ -85,6 +92,24 @@ export function TagInput({
           <option key={s} value={s} />
         ))}
       </datalist>
+
+      {quickAdd.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-muted text-xs">Tags in this list:</span>
+          <div className="flex flex-wrap gap-2">
+            {quickAdd.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => addTag(t)}
+                className="font-pixel border-border bg-panel hover:border-primary cursor-pointer border-2 px-2 py-1 text-[10px] uppercase"
+              >
+                ＋ {t}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

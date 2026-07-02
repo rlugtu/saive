@@ -94,6 +94,7 @@ export default async function Home({
                     id: b.id,
                     name: b.name,
                     description: b.description,
+                    image: b.images[0] ?? null,
                     rating: b.rating,
                     visited: b.visited,
                     tags: b.tags.map((bt) => bt.tag),

@@ -74,7 +74,7 @@ export function ListControls({
           <ListForm action={editAction} defaults={defaults} submitLabel="Save" />
           {deleteAction && (
             <div className="border-border flex flex-col gap-2 border-t-2 pt-4">
-              <span className="font-pixel text-muted text-[10px] uppercase">
+              <span className="font-pixel text-muted text-xs uppercase">
                 Danger zone
               </span>
               <ConfirmDeleteButton

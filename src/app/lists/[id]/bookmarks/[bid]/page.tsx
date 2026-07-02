@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOnboardedUser } from "@/lib/session";
 import { getBookmarkForUser } from "@/lib/bookmarks";
@@ -10,7 +9,7 @@ import { addBookmarkComment } from "@/lib/actions/comments";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { StarRating } from "@/components/bookmarks/StarRating";
 import { VisitedToggle } from "@/components/bookmarks/VisitedToggle";
-import { EditBookmarkPanel } from "@/components/bookmarks/EditBookmarkPanel";
+import { BookmarkHeader } from "@/components/bookmarks/BookmarkHeader";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { PixelButton } from "@/components/ui/PixelButton";
 import { PixelCard } from "@/components/ui/PixelCard";
@@ -41,18 +40,34 @@ export default async function BookmarkPage({
     getBookmarkComments(bid),
   ]);
 
+  const editDefaults = {
+    name: bookmark.name,
+    images: bookmark.images,
+    urls: bookmark.urls.join("\n"),
+    location: bookmark.location,
+    rating: bookmark.rating,
+    visited: bookmark.visited,
+    description: bookmark.description,
+    notes: bookmark.notes,
+    tags: tagNames,
+  };
+
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12 flex flex-col gap-6">
-      <Link href={`/lists/${bookmark.list.id}`}>
-        <PixelButton variant="ghost" size="sm">
-          ← {bookmark.list.icon} {bookmark.list.name}
-        </PixelButton>
-      </Link>
+      <BookmarkHeader
+        listId={bookmark.list.id}
+        listIcon={bookmark.list.icon}
+        listName={bookmark.list.name}
+        canEdit={canEdit}
+        bookmarkId={bookmark.id}
+        defaults={editDefaults}
+        tagSuggestions={tagSuggestions}
+      />
 
       {/* Hero */}
       <PixelCard className="flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl text-primary break-words">{bookmark.name}</h1>
+          <h1 className="text-xl text-primary break-words">{bookmark.name}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             {bookmark.rating > 0 && <StarRating value={bookmark.rating} />}
             <PixelBadge tone={bookmark.visited ? "success" : "default"}>
@@ -133,34 +148,14 @@ export default async function BookmarkPage({
       )}
 
       {canEdit && (
-        <>
-          <div className="flex flex-wrap items-center gap-3">
-            <VisitedToggle
-              bookmarkId={bookmark.id}
-              visited={bookmark.visited}
-            />
-            <ConfirmDeleteButton
-              action={deleteBookmark.bind(null, bookmark.id)}
-              label="Delete"
-              confirmText="Delete this bookmark?"
-            />
-          </div>
-          <EditBookmarkPanel
-            bookmarkId={bookmark.id}
-            tagSuggestions={tagSuggestions}
-            defaults={{
-              name: bookmark.name,
-              images: bookmark.images,
-              urls: bookmark.urls.join("\n"),
-              location: bookmark.location,
-              rating: bookmark.rating,
-              visited: bookmark.visited,
-              description: bookmark.description,
-              notes: bookmark.notes,
-              tags: tagNames,
-            }}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <VisitedToggle bookmarkId={bookmark.id} visited={bookmark.visited} />
+          <ConfirmDeleteButton
+            action={deleteBookmark.bind(null, bookmark.id)}
+            label="Delete"
+            confirmText="Delete this bookmark?"
           />
-        </>
+        </div>
       )}
 
       <CommentSection

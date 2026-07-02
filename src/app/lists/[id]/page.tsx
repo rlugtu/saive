@@ -15,7 +15,7 @@ import type { BookmarkCardData } from "@/lib/types";
 import { ListControls } from "@/components/lists/ListControls";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { CreateBookmarkPanel } from "@/components/bookmarks/CreateBookmarkPanel";
-import { BookmarkCard } from "@/components/bookmarks/BookmarkCard";
+import { ListBookmarks } from "@/components/bookmarks/ListBookmarks";
 import { PixelButton } from "@/components/ui/PixelButton";
 import { PixelBadge } from "@/components/ui/PixelBadge";
 
@@ -45,11 +45,17 @@ export default async function ListPage({
     id: b.id,
     name: b.name,
     description: b.description,
+    image: b.images[0] ?? null,
     rating: b.rating,
     visited: b.visited,
     tags: b.tags.map((bt) => bt.tag),
     commentCount: b._count.comments,
   }));
+
+  // Tags already used on bookmarks in this list (for quick-add chips).
+  const listTags = [
+    ...new Set(bookmarkRows.flatMap((b) => b.tags.map((bt) => bt.tag.name))),
+  ].sort((a, b) => a.localeCompare(b));
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12 flex flex-col gap-8">
@@ -112,7 +118,11 @@ export default async function ListPage({
       <section className="flex flex-col gap-4">
         <h2 className="font-pixel text-sm">Bookmarks</h2>
         {canEdit && (
-          <CreateBookmarkPanel listId={id} tagSuggestions={tagSuggestions} />
+          <CreateBookmarkPanel
+            listId={id}
+            tagSuggestions={tagSuggestions}
+            listTags={listTags}
+          />
         )}
 
         {bookmarks.length === 0 ? (
@@ -122,11 +132,7 @@ export default async function ListPage({
               : "No bookmarks here yet."}
           </p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {bookmarks.map((bookmark) => (
-              <BookmarkCard key={bookmark.id} listId={id} bookmark={bookmark} />
-            ))}
-          </div>
+          <ListBookmarks listId={id} bookmarks={bookmarks} />
         )}
       </section>
 

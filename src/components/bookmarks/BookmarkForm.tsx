@@ -29,7 +29,7 @@ const Field = ({
   children: React.ReactNode;
 }) => (
   <label className="flex flex-col gap-1.5">
-    <span className="font-pixel text-[10px] uppercase">{label}</span>
+    <span className="font-pixel text-xs uppercase">{label}</span>
     {children}
   </label>
 );
@@ -39,11 +39,13 @@ export function BookmarkForm({
   defaults,
   submitLabel,
   tagSuggestions = [],
+  existingTags = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   defaults?: Partial<BookmarkDefaults>;
   submitLabel: string;
   tagSuggestions?: string[];
+  existingTags?: string[];
 }) {
   const [name, setName] = useState(defaults?.name ?? "");
   const [urls, setUrls] = useState(defaults?.urls ?? "");
@@ -96,7 +98,7 @@ export function BookmarkForm({
     <form action={action} className="flex flex-col gap-4">
       {/* Paste-to-autofill */}
       <div className="pixel-box-sm bg-bg flex flex-col gap-2 p-3">
-        <span className="font-pixel text-[10px] uppercase">
+        <span className="font-pixel text-xs uppercase">
           Paste a link to autofill
         </span>
         <div className="flex gap-2">
@@ -124,7 +126,7 @@ export function BookmarkForm({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="font-pixel text-[10px] uppercase">Name *</span>
+        <span className="font-pixel text-xs uppercase">Name *</span>
         <PixelInput
           name="name"
           value={name}
@@ -136,7 +138,7 @@ export function BookmarkForm({
 
       {images.length > 0 && (
         <div className="flex flex-col gap-2">
-          <span className="font-pixel text-[10px] uppercase">Photos</span>
+          <span className="font-pixel text-xs uppercase">Photos</span>
           <div className="flex flex-wrap gap-2">
             {images.map((src) => (
               <div key={src} className="relative">
@@ -185,7 +187,7 @@ export function BookmarkForm({
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5">
-          <span className="font-pixel text-[10px] uppercase">Rating</span>
+          <span className="font-pixel text-xs uppercase">Rating</span>
           <RatingInput defaultValue={defaults?.rating ?? 0} />
         </div>
         <label className="flex cursor-pointer items-center gap-2">
@@ -195,7 +197,7 @@ export function BookmarkForm({
             defaultChecked={defaults?.visited ?? false}
             className="accent-primary h-5 w-5"
           />
-          <span className="font-pixel text-[10px] uppercase">Visited</span>
+          <span className="font-pixel text-xs uppercase">Visited</span>
         </label>
       </div>
 
@@ -219,8 +221,12 @@ export function BookmarkForm({
       </Field>
 
       <div className="flex flex-col gap-2">
-        <span className="font-pixel text-[10px] uppercase">Tags</span>
-        <TagInput defaultValue={defaults?.tags ?? []} suggestions={tagSuggestions} />
+        <span className="font-pixel text-xs uppercase">Tags</span>
+        <TagInput
+          defaultValue={defaults?.tags ?? []}
+          suggestions={tagSuggestions}
+          existing={existingTags}
+        />
       </div>
 
       <SubmitButton label={submitLabel} pendingLabel="Saving…" />
