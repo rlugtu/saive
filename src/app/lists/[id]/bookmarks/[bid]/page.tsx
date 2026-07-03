@@ -10,6 +10,7 @@ import { CommentSection } from "@/components/comments/CommentSection";
 import { StarRating } from "@/components/bookmarks/StarRating";
 import { VisitedToggle } from "@/components/bookmarks/VisitedToggle";
 import { BookmarkHeader } from "@/components/bookmarks/BookmarkHeader";
+import { BookmarkVideo } from "@/components/bookmarks/BookmarkVideo";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { PixelButton } from "@/components/ui/PixelButton";
 import { PixelCard } from "@/components/ui/PixelCard";
@@ -50,6 +51,8 @@ export default async function BookmarkPage({
     description: bookmark.description,
     notes: bookmark.notes,
     tags: tagNames,
+    videoUrl: bookmark.videoUrl,
+    videoType: bookmark.videoType,
   };
 
   return (
@@ -95,6 +98,14 @@ export default async function BookmarkPage({
               />
             ))}
           </div>
+        )}
+
+        {bookmark.videoUrl && (
+          <BookmarkVideo
+            videoUrl={bookmark.videoUrl}
+            videoType={bookmark.videoType}
+            poster={bookmark.images[0]}
+          />
         )}
 
         {bookmark.description && (

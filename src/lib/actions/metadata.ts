@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUser } from "@/lib/session";
+import { detectVideo, type DetectedVideo } from "@/lib/video";
 
 export type LinkMetadata = {
   title: string | null;
@@ -9,6 +10,7 @@ export type LinkMetadata = {
   author: string | null;
   publisher: string | null;
   sourceUrl: string;
+  video: DetectedVideo | null;
 };
 
 export type MetadataResult =
@@ -62,6 +64,7 @@ async function fetchYouTube(url: string): Promise<MetadataResult> {
         author: j.author_name ?? null,
         publisher: "YouTube",
         sourceUrl: url,
+        video: detectVideo(url),
       },
     };
   } catch (err) {
@@ -78,7 +81,7 @@ async function fetchMicrolink(url: string): Promise<MetadataResult> {
   try {
     const endpoint = `https://api.microlink.io/?url=${encodeURIComponent(
       url,
-    )}&audio=false&video=false`;
+    )}&audio=false&video=true`;
     const res = await fetch(endpoint, {
       headers: { accept: "application/json" },
       cache: "no-store",
@@ -105,6 +108,7 @@ async function fetchMicrolink(url: string): Promise<MetadataResult> {
         publisher?: string;
         url?: string;
         image?: { url?: string };
+        video?: { url?: string; type?: string };
       };
     };
 
@@ -126,6 +130,7 @@ async function fetchMicrolink(url: string): Promise<MetadataResult> {
         author: d.author ?? null,
         publisher: d.publisher ?? null,
         sourceUrl: d.url ?? url,
+        video: detectVideo(url, d.video?.url ?? null),
       },
     };
   } catch (err) {
@@ -170,6 +175,7 @@ export async function fetchLinkMetadata(rawUrl: string): Promise<MetadataResult>
       description: result.data.description?.slice(0, 80) ?? null,
       images: result.data.images,
       publisher: result.data.publisher,
+      video: result.data.video,
     });
   } else {
     console.warn(`[link-metadata] result for ${url}:`, {

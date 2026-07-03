@@ -19,6 +19,8 @@ export type BookmarkDefaults = {
   description: string;
   notes: string;
   tags: string[];
+  videoUrl: string;
+  videoType: string;
 };
 
 const Field = ({
@@ -52,6 +54,8 @@ export function BookmarkForm({
   const [location, setLocation] = useState(defaults?.location ?? "");
   const [description, setDescription] = useState(defaults?.description ?? "");
   const [images, setImages] = useState<string[]>(defaults?.images ?? []);
+  const [videoUrl, setVideoUrl] = useState(defaults?.videoUrl ?? "");
+  const [videoType, setVideoType] = useState(defaults?.videoType ?? "");
 
   const [link, setLink] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,6 +94,10 @@ export function BookmarkForm({
     if (d.description) setDescription(d.description);
     if (d.images.length) {
       setImages((prev) => [...new Set([...d.images, ...prev])]);
+    }
+    if (d.video) {
+      setVideoUrl(d.video.url);
+      setVideoType(d.video.type);
     }
     setLink("");
   }
@@ -162,6 +170,29 @@ export function BookmarkForm({
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {videoUrl && (
+        <div className="flex flex-col gap-2">
+          <input type="hidden" name="videoUrl" value={videoUrl} />
+          <input type="hidden" name="videoType" value={videoType} />
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-pixel text-xs uppercase">
+              🎬 Video detected
+            </span>
+            <PixelButton
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setVideoUrl("");
+                setVideoType("");
+              }}
+            >
+              Remove
+            </PixelButton>
           </div>
         </div>
       )}

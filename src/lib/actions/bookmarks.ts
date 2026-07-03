@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { assertRole } from "@/lib/permissions";
+import { isTrustedIframeUrl } from "@/lib/video";
 
 type BookmarkFields = {
   name: string;
@@ -15,6 +16,8 @@ type BookmarkFields = {
   location: string;
   rating: number;
   visited: boolean;
+  videoUrl: string;
+  videoType: string;
 };
 
 function parseBookmarkFields(formData: FormData): BookmarkFields {
@@ -40,6 +43,16 @@ function parseBookmarkFields(formData: FormData): BookmarkFields {
     ? Math.min(5, Math.max(0, Math.round(ratingRaw)))
     : 0;
 
+  // Video: keep only a trusted-host iframe embed or an https direct file.
+  let videoType = String(formData.get("videoType") ?? "").trim();
+  let videoUrl = String(formData.get("videoUrl") ?? "").trim();
+  const okFile = videoType === "file" && /^https:\/\//i.test(videoUrl);
+  const okIframe = videoType === "iframe" && isTrustedIframeUrl(videoUrl);
+  if (!okFile && !okIframe) {
+    videoType = "";
+    videoUrl = "";
+  }
+
   return {
     name,
     description: String(formData.get("description") ?? "").trim(),
@@ -49,6 +62,8 @@ function parseBookmarkFields(formData: FormData): BookmarkFields {
     location: String(formData.get("location") ?? "").trim(),
     rating,
     visited: formData.get("visited") === "on",
+    videoUrl,
+    videoType,
   };
 }
 

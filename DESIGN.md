@@ -88,9 +88,10 @@ ListInvite      id, listId, email, role, token, status (PENDING|ACCEPTED),
 
 Bookmark        id, listId, name, description, urls (string[]),
                 images (string[]), notes, location, rating (0–5),
-                visited (bool), createdAt, updatedAt
+                visited (bool), videoUrl, videoType, createdAt, updatedAt
                 -- no icon (removed); urls[0] = original source link;
-                -- images = extracted photo URLs (2026-07-02)
+                -- images = extracted photo URLs;
+                -- videoUrl/videoType = detected playable video ("iframe"|"file")
 
 Tag             id, name, userId          — unique per (userId, name)
 BookmarkTag     bookmarkId, tagId         — join table
@@ -194,6 +195,11 @@ Pause for review after **each** step.
 - **PWA**: web manifest, generated icons (any + maskable + apple), a service worker with an
   offline fallback (`/offline`), prod-only registration. (Web Share Target intentionally not
   built — iOS Safari can't receive shares; see §10.)
+- **Video player**: autofill detects a playable video (YouTube/Vimeo/TikTok/Instagram embeds +
+  direct og:video files) via `src/lib/video.ts` `detectVideo`; stored as `videoUrl`/`videoType`
+  on the bookmark; the detail page shows an optional click-to-play player (`BookmarkVideo`,
+  poster facade → iframe on click; `<video>` for files). Trusted-host whitelist enforced on both
+  write and render. See `docs/video-player-plan.md`.
 
 ---
 
