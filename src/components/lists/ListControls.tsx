@@ -5,6 +5,7 @@ import { ListForm, type ListDefaults } from "./ListForm";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { PixelButton } from "@/components/ui/PixelButton";
 import { PixelCard } from "@/components/ui/PixelCard";
+import { Pencil, Users, X } from "lucide-react";
 
 function PanelHeader({
   title,
@@ -52,18 +53,20 @@ export function ListControls({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PixelButton
           variant="secondary"
-          size="sm"
+          size="xs"
           onClick={() => setEditOpen((o) => !o)}
         >
+          {editOpen ? <X size={14} aria-hidden /> : <Pencil size={14} aria-hidden />}
           {editOpen ? "Close" : "Edit"}
         </PixelButton>
         {shareChildren && (
           <PixelButton
             variant="secondary"
-            size="sm"
+            size="xs"
             onClick={() => setShareOpen((o) => !o)}
           >
-            {shareOpen ? "Cancel" : "＋ Share list"}
+            {shareOpen ? <X size={14} aria-hidden /> : <Users size={14} aria-hidden />}
+            {shareOpen ? "Cancel" : "Members"}
           </PixelButton>
         )}
       </div>
@@ -71,7 +74,11 @@ export function ListControls({
       {editOpen && (
         <PixelCard className="flex flex-col gap-4">
           <PanelHeader title="Edit list" onClose={() => setEditOpen(false)} />
-          <ListForm action={editAction} defaults={defaults} submitLabel="Save" />
+          <ListForm
+            action={editAction}
+            defaults={defaults}
+            submitLabel="Save"
+          />
           {deleteAction && (
             <div className="border-border flex flex-col gap-2 border-t-2 pt-4">
               <span className="font-pixel text-muted text-sm uppercase">

@@ -2,7 +2,7 @@ import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
-type Size = "sm" | "md" | "lg";
+type Size = "xs" | "sm" | "md" | "lg";
 
 const variantClasses: Record<Variant, string> = {
   primary: "bg-primary text-primary-ink",
@@ -12,13 +12,13 @@ const variantClasses: Record<Variant, string> = {
 };
 
 const sizeClasses: Record<Size, string> = {
+  xs: "px-3 py-1 text-xs",
   sm: "px-3 py-1.5 text-sm",
   md: "px-4 py-2.5 text-sm",
   lg: "px-6 py-3.5 text-sm",
 };
 
-export interface PixelButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface PixelButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
 }

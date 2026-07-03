@@ -29,7 +29,9 @@ export function InviteForm({ listId }: { listId: string }) {
           <option value="VIEWER">Viewer</option>
           <option value="COLLABORATOR">Collaborator</option>
         </select>
-        <SubmitButton label="Invite" pendingLabel="…" />
+        <div className="flex justify-end w-full mt-4">
+          <SubmitButton label="Invite" pendingLabel="…" />
+        </div>
       </div>
       {state.error && <p className="text-danger text-sm">{state.error}</p>}
       {state.success && <p className="text-success text-sm">{state.success}</p>}

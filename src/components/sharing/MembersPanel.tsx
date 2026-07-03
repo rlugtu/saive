@@ -29,7 +29,7 @@ export async function MembersPanel({
             key={m.userId}
             className="flex items-center justify-between gap-2"
           >
-            <span className="flex min-w-0 items-center gap-2">
+            <span className="flex min-w-0 items-center gap-2 text-sm">
               <span aria-hidden>{m.user.icon ?? "🔖"}</span>
               <span className="truncate">
                 {m.user.displayName ?? m.user.name ?? m.user.email}

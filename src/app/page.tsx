@@ -10,10 +10,18 @@ import { HomeLists } from "@/components/lists/HomeLists";
 import { SearchBar } from "@/components/search/SearchBar";
 import { BookmarkCard } from "@/components/bookmarks/BookmarkCard";
 import { PixelButton } from "@/components/ui/PixelButton";
+import { Settings } from "lucide-react";
 
 function parseTags(raw: string | undefined): string[] {
   if (!raw) return [];
-  return [...new Set(raw.split(",").map((t) => t.trim()).filter(Boolean))];
+  return [
+    ...new Set(
+      raw
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+    ),
+  ];
 }
 
 export default async function Home({
@@ -67,14 +75,18 @@ export default async function Home({
         <div className="flex items-center gap-2">
           <Link href="/settings">
             <PixelButton variant="secondary" size="sm">
-              Settings
+              <Settings size={14} aria-hidden /> Settings
             </PixelButton>
           </Link>
           <SignOutButton />
         </div>
       </header>
 
-      <SearchBar lists={listOptions} tags={tagOptions} selected={selectedTags} />
+      <SearchBar
+        lists={listOptions}
+        tags={tagOptions}
+        selected={selectedTags}
+      />
 
       {filtering ? (
         <section className="flex flex-col gap-4">
@@ -109,7 +121,9 @@ export default async function Home({
         <>
           <CreateListPanel />
           <section className="flex flex-col gap-4">
-            <h2 className="font-pixel text-sm">Your lists</h2>
+            <h2 className="font-pixel text-xl font-semibold text-primary">
+              Your lists
+            </h2>
             <HomeLists lists={lists} />
           </section>
         </>

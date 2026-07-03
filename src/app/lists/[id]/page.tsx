@@ -116,7 +116,6 @@ export default async function ListPage({
       )}
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-pixel text-sm">Bookmarks</h2>
         {canEdit && (
           <CreateBookmarkPanel
             listId={id}
@@ -126,7 +125,7 @@ export default async function ListPage({
         )}
 
         {bookmarks.length === 0 ? (
-          <p className="text-muted">
+          <p className="text-muted text-sm text-center">
             {canEdit
               ? "No bookmarks yet — add your first one. 🔖"
               : "No bookmarks here yet."}

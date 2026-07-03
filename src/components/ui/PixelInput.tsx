@@ -11,7 +11,7 @@ export const PixelInput = forwardRef<
       ref={ref}
       className={cn(
         "pixel-box-sm bg-panel text-ink w-full px-3 py-2.5",
-        "placeholder:text-muted outline-none",
+        "placeholder:text-muted placeholder:text-sm outline-none",
         "focus:border-primary focus:shadow-[3px_3px_0_0_var(--primary)]",
         className,
       )}
