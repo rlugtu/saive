@@ -1,6 +1,8 @@
 # Bookmark location: address / business autocomplete + mini map
 
-> **Status: planned, not yet implemented.** Approved plan saved for later execution.
+> **Status: implemented (2026-07-03).** Provider bias set to soft `bias=countrycode:us`.
+> Built steps A–G; `npm run lint` + `npm run build` green. Live browser verification of
+> create/edit + map pending.
 
 ## Context
 Today a bookmark's `location` is a single free-text `String @default("")` — typed manually,

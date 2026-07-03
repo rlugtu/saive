@@ -7,6 +7,7 @@ import { PixelButton } from "@/components/ui/PixelButton";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { RatingInput } from "./RatingInput";
 import { TagInput } from "./TagInput";
+import { LocationInput } from "./LocationInput";
 import { fetchLinkMetadata } from "@/lib/actions/metadata";
 
 export type BookmarkDefaults = {
@@ -14,6 +15,8 @@ export type BookmarkDefaults = {
   urls: string; // newline-joined
   images: string[];
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   rating: number;
   visited: boolean;
   description: string;
@@ -51,7 +54,6 @@ export function BookmarkForm({
 }) {
   const [name, setName] = useState(defaults?.name ?? "");
   const [urls, setUrls] = useState(defaults?.urls ?? "");
-  const [location, setLocation] = useState(defaults?.location ?? "");
   const [description, setDescription] = useState(defaults?.description ?? "");
   const [images, setImages] = useState<string[]>(defaults?.images ?? []);
   const [videoUrl, setVideoUrl] = useState(defaults?.videoUrl ?? "");
@@ -227,11 +229,10 @@ export function BookmarkForm({
       </Field>
 
       <Field label="Location">
-        <PixelInput
-          name="location"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="Tokyo, Japan"
+        <LocationInput
+          initialLocation={defaults?.location ?? ""}
+          initialLat={defaults?.latitude ?? null}
+          initialLon={defaults?.longitude ?? null}
         />
       </Field>
 

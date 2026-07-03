@@ -14,6 +14,8 @@ type BookmarkFields = {
   images: string[];
   notes: string;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   rating: number;
   visited: boolean;
   videoUrl: string;
@@ -38,6 +40,15 @@ function parseBookmarkFields(formData: FormData): BookmarkFields {
     ),
   ];
 
+  // Coordinates are present only when the location was picked from autocomplete;
+  // free-typed text (or old rows) leaves them null.
+  const toCoord = (v: FormDataEntryValue | null): number | null => {
+    const s = v === null ? "" : String(v).trim();
+    return s !== "" && Number.isFinite(Number(s)) ? Number(s) : null;
+  };
+  const latitude = toCoord(formData.get("latitude"));
+  const longitude = toCoord(formData.get("longitude"));
+
   const ratingRaw = Number(formData.get("rating") ?? 0);
   const rating = Number.isFinite(ratingRaw)
     ? Math.min(5, Math.max(0, Math.round(ratingRaw)))
@@ -60,6 +71,8 @@ function parseBookmarkFields(formData: FormData): BookmarkFields {
     images,
     notes: String(formData.get("notes") ?? "").trim(),
     location: String(formData.get("location") ?? "").trim(),
+    latitude,
+    longitude,
     rating,
     visited: formData.get("visited") === "on",
     videoUrl,

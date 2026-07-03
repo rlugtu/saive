@@ -163,6 +163,8 @@ model Bookmark {
   images      String[] @default([]) // extracted photo URLs (remote)
   notes       String   @default("")
   location    String   @default("")
+  latitude    Float? // set when location is picked from autocomplete; null for free text / old rows
+  longitude   Float?
   rating      Int      @default(0) // 0–5
   visited     Boolean  @default(false)
   videoUrl    String   @default("") // detected playable video (embed src or media file)
