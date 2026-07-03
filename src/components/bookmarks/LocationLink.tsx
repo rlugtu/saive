@@ -1,6 +1,8 @@
 "use client";
 
-import { MapPin, ExternalLink } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { MapPin, ChevronDown } from "lucide-react";
 
 /** Google Maps universal URL — opens the app if installed, else web; works everywhere. */
 function googleUrl(location: string, lat: number | null, lon: number | null): string {
@@ -20,18 +22,11 @@ function appleUrl(location: string, lat: number | null, lon: number | null): str
   return `https://maps.apple.com/?${params.toString()}`;
 }
 
-function isIOS(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent;
-  // iPadOS 13+ reports a "Macintosh" UA, so treat a touch-capable Mac as iOS too.
-  return /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-}
-
 /**
- * Tappable location that hands off to a native maps app with the place pre-loaded.
- * The `href` is the Google Maps universal URL — correct on any platform with no JS.
- * On iOS we intercept the click and open Apple Maps instead, so iPhone/iPad users get
- * their default app.
+ * Tappable location that lets the user choose which maps app to open the place in
+ * (pin/search view). Both options are always offered — Apple Maps and Google Maps —
+ * each handing off to the native app if installed, else the web. Uses stored
+ * coordinates for an exact pin, falling back to the location text as a search query.
  */
 export function LocationLink({
   location,
@@ -42,22 +37,72 @@ export function LocationLink({
   lat?: number | null;
   lon?: number | null;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click or Escape while the menu is open.
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const options = [
+    { label: "Apple Maps", href: appleUrl(location, lat, lon) },
+    { label: "Google Maps", href: googleUrl(location, lat, lon) },
+  ];
+
   return (
-    <a
-      href={googleUrl(location, lat, lon)}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={(e) => {
-        if (isIOS()) {
-          e.preventDefault();
-          window.open(appleUrl(location, lat, lon), "_blank", "noopener,noreferrer");
-        }
-      }}
-      className="text-muted hover:text-primary inline-flex max-w-full items-center gap-1.5 underline-offset-2 hover:underline"
-    >
-      <MapPin size={14} aria-hidden className="shrink-0" />
-      <span className="truncate">{location}</span>
-      <ExternalLink size={12} aria-hidden className="shrink-0 opacity-60" />
-    </a>
+    <div ref={ref} className="relative inline-block max-w-full">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="text-muted hover:text-primary inline-flex max-w-full cursor-pointer items-center gap-1.5 underline-offset-2 hover:underline"
+      >
+        <MapPin size={14} aria-hidden className="shrink-0" />
+        <span className="truncate">{location}</span>
+        <ChevronDown size={12} aria-hidden className="shrink-0 opacity-60" />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            role="menu"
+            className="pixel-box bg-panel absolute z-10 mt-2 min-w-[12rem] overflow-hidden p-1"
+          >
+            {options.map((o) => (
+              <a
+                key={o.label}
+                href={o.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="hover:bg-primary/15 flex cursor-pointer items-center gap-2 px-3 py-2 text-sm"
+              >
+                <MapPin size={14} aria-hidden className="shrink-0" />
+                {o.label}
+              </a>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
