@@ -1,12 +1,13 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 
-/** All tag names the user has created (for suggestions + search). */
-export async function getUserTagNames(userId: string): Promise<string[]> {
-  const tags = await prisma.tag.findMany({
+/** All of the user's tags with their assigned colors (for colored pills). */
+export async function getUserTags(
+  userId: string,
+): Promise<{ name: string; color: string }[]> {
+  return prisma.tag.findMany({
     where: { userId },
     orderBy: { name: "asc" },
-    select: { name: true },
+    select: { name: true, color: true },
   });
-  return tags.map((t) => t.name);
 }

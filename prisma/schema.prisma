@@ -182,6 +182,7 @@ model Bookmark {
 model Tag {
   id        String   @id @default(uuid())
   name      String
+  color     String   @default("") // hex color assigned at creation; "" = none (legacy)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

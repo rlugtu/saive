@@ -10,10 +10,12 @@ export function CreateBookmarkPanel({
   listId,
   tagSuggestions,
   listTags,
+  tagColors,
 }: {
   listId: string;
   tagSuggestions: string[];
   listTags: string[];
+  tagColors?: Record<string, string>;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -44,6 +46,7 @@ export function CreateBookmarkPanel({
         submitLabel="Create"
         tagSuggestions={tagSuggestions}
         existingTags={listTags}
+        tagColors={tagColors}
       />
     </PixelCard>
   );

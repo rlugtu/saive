@@ -17,12 +17,14 @@ export function BookmarkHeader({
   bookmarkId,
   defaults,
   tagSuggestions,
+  tagColors,
 }: {
   listId: string;
   canEdit: boolean;
   bookmarkId: string;
   defaults: BookmarkDefaults;
   tagSuggestions: string[];
+  tagColors?: Record<string, string>;
 }) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
@@ -69,6 +71,7 @@ export function BookmarkHeader({
             defaults={defaults}
             submitLabel="Save"
             tagSuggestions={tagSuggestions}
+            tagColors={tagColors}
           />
         </PixelCard>
       )}

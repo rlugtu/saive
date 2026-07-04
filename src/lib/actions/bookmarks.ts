@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { assertRole } from "@/lib/permissions";
 import { createListRecord } from "@/lib/lists";
+import { randomTagColor } from "@/lib/tag-colors";
 import { isTrustedIframeUrl } from "@/lib/video";
 
 type BookmarkFields = {
@@ -92,17 +93,53 @@ function parseTagNames(formData: FormData): string[] {
   ];
 }
 
-/** Set the acting user's tags on a bookmark to exactly `names` (upsert + prune). */
+/**
+ * Set the acting user's tags on a bookmark to exactly `names` (upsert + prune).
+ * New tags are assigned a random color, avoiding colors already used by other
+ * tags in `listId` (best-effort per-list uniqueness — tags are user-scoped).
+ */
 async function syncBookmarkTags(
   bookmarkId: string,
   userId: string,
   names: string[],
+  listId: string,
 ) {
+  // Which names already exist? (existing tags keep their color.)
+  const existing = await prisma.tag.findMany({
+    where: { userId, name: { in: names } },
+    select: { name: true },
+  });
+  const existingNames = new Set(existing.map((t) => t.name));
+  const newNames = names.filter((n) => !existingNames.has(n));
+
+  // Colors to steer clear of: those already used by tags present in this list.
+  const avoid = new Set<string>();
+  if (newNames.length) {
+    const listColors = await prisma.tag.findMany({
+      where: {
+        userId,
+        color: { not: "" },
+        bookmarks: { some: { bookmark: { listId } } },
+      },
+      select: { color: true },
+      distinct: ["color"],
+    });
+    listColors.forEach((t) => avoid.add(t.color));
+  }
+  // Assign each new tag a color, reserving it so co-created tags don't clash.
+  const colorFor = new Map<string, string>();
+  for (const name of newNames) {
+    const color = randomTagColor([...avoid]);
+    colorFor.set(name, color);
+    avoid.add(color);
+  }
+
   const tags = await Promise.all(
     names.map((name) =>
       prisma.tag.upsert({
         where: { userId_name: { userId, name } },
-        create: { userId, name },
+        // Color is set only on insert; existing tags keep theirs (race-safe).
+        create: { userId, name, color: colorFor.get(name) ?? randomTagColor() },
         update: {},
       }),
     ),
@@ -139,7 +176,7 @@ export async function createBookmark(listId: string, formData: FormData) {
   const bookmark = await prisma.bookmark.create({
     data: { ...fields, listId },
   });
-  await syncBookmarkTags(bookmark.id, user.id, parseTagNames(formData));
+  await syncBookmarkTags(bookmark.id, user.id, parseTagNames(formData), listId);
 
   // Stay on the list so the create panel can close and the new card appears.
   revalidatePath(`/lists/${listId}`);
@@ -186,7 +223,7 @@ export async function createBookmarkInLists(
     const bookmark = await prisma.bookmark.create({
       data: { ...fields, listId },
     });
-    await syncBookmarkTags(bookmark.id, user.id, tagNames);
+    await syncBookmarkTags(bookmark.id, user.id, tagNames, listId);
   }
 
   revalidatePath("/");
@@ -200,7 +237,7 @@ export async function updateBookmark(bookmarkId: string, formData: FormData) {
 
   const fields = parseBookmarkFields(formData);
   await prisma.bookmark.update({ where: { id: bookmarkId }, data: fields });
-  await syncBookmarkTags(bookmarkId, user.id, parseTagNames(formData));
+  await syncBookmarkTags(bookmarkId, user.id, parseTagNames(formData), listId);
 
   revalidatePath(`/lists/${listId}`);
   revalidatePath(`/lists/${listId}/bookmarks/${bookmarkId}`);

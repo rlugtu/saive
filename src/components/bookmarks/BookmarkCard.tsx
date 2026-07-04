@@ -69,7 +69,11 @@ export function BookmarkCard({
       {bookmark.tags.length > 0 && (
         <div className="flex min-w-0 flex-wrap gap-1.5">
           {bookmark.tags.map((t) => (
-            <PixelBadge key={t.id} className="max-w-full break-all">
+            <PixelBadge
+              key={t.id}
+              color={t.color || undefined}
+              className="max-w-full break-all"
+            >
               {t.name}
             </PixelBadge>
           ))}

@@ -2,17 +2,19 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { requireOnboardedUser } from "@/lib/session";
 import { getUserLists } from "@/lib/lists";
-import { getUserTagNames } from "@/lib/tags";
+import { getUserTags } from "@/lib/tags";
 import { roleAtLeast } from "@/lib/permissions";
 import { CreateBookmarkFlow } from "@/components/bookmarks/CreateBookmarkFlow";
 
 export default async function NewBookmarkPage() {
   const user = await requireOnboardedUser();
 
-  const [memberships, tagSuggestions] = await Promise.all([
+  const [memberships, userTags] = await Promise.all([
     getUserLists(user.id),
-    getUserTagNames(user.id),
+    getUserTags(user.id),
   ]);
+  const tagSuggestions = userTags.map((t) => t.name);
+  const tagColors = Object.fromEntries(userTags.map((t) => [t.name, t.color]));
 
   // Only lists the user can add bookmarks to.
   const listOptions = memberships
@@ -36,7 +38,11 @@ export default async function NewBookmarkPage() {
         </div>
       </header>
 
-      <CreateBookmarkFlow listOptions={listOptions} tagSuggestions={tagSuggestions} />
+      <CreateBookmarkFlow
+        listOptions={listOptions}
+        tagSuggestions={tagSuggestions}
+        tagColors={tagColors}
+      />
     </main>
   );
 }

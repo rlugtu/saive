@@ -19,10 +19,13 @@ export function SearchBar({
   lists,
   tags,
   selected,
+  tagColors = {},
 }: {
   lists: ListOption[];
   tags: string[];
   selected: string[];
+  /** name → assigned hex color, for coloring tag pills/rows. */
+  tagColors?: Record<string, string>;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -124,7 +127,11 @@ export function SearchBar({
                     onClick={() => addTag(t)}
                     className="hover:bg-primary/15 flex w-full items-center gap-2 px-2 py-1.5 text-left cursor-pointer"
                   >
-                    <span aria-hidden>🏷️</span>
+                    <span
+                      aria-hidden
+                      className="border-border inline-block h-3 w-3 shrink-0 border"
+                      style={{ backgroundColor: tagColors[t] || "transparent" }}
+                    />
                     <span className="truncate">{t}</span>
                   </button>
                 ))}
@@ -147,7 +154,11 @@ export function SearchBar({
                 transition={{ duration: 0.15 }}
                 className="inline-flex"
               >
-                <PixelBadge tone="primary" onRemove={() => removeTag(tag)}>
+                <PixelBadge
+                  tone="primary"
+                  color={tagColors[tag] || undefined}
+                  onRemove={() => removeTag(tag)}
+                >
                   {tag}
                 </PixelBadge>
               </motion.span>

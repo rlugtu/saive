@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { tagTextColor } from "@/lib/tag-colors";
 
 type Tone = "default" | "primary" | "accent" | "success";
 
@@ -12,6 +13,8 @@ const toneClasses: Record<Tone, string> = {
 export interface PixelBadgeProps
   extends React.HTMLAttributes<HTMLSpanElement> {
   tone?: Tone;
+  /** Explicit hex background (e.g. an assigned tag color); overrides `tone`. */
+  color?: string;
   /** When provided, renders a small × button to remove the badge (tag pills). */
   onRemove?: () => void;
 }
@@ -20,8 +23,10 @@ export interface PixelBadgeProps
 export function PixelBadge({
   className,
   tone = "default",
+  color,
   onRemove,
   children,
+  style,
   ...props
 }: PixelBadgeProps) {
   return (
@@ -29,9 +34,14 @@ export function PixelBadge({
       className={cn(
         "font-pixel inline-flex items-center gap-1.5 px-2 py-1 text-sm uppercase",
         "border-2 border-border",
-        toneClasses[tone],
+        !color && toneClasses[tone],
         className,
       )}
+      style={
+        color
+          ? { backgroundColor: color, color: tagTextColor(color), ...style }
+          : style
+      }
       {...props}
     >
       {children}

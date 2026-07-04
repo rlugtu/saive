@@ -8,7 +8,7 @@ export function getBookmarksForList(listId: string) {
     where: { listId },
     orderBy: { createdAt: "desc" },
     include: {
-      tags: { include: { tag: { select: { id: true, name: true } } } },
+      tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
       _count: { select: { comments: true } },
     },
   });
@@ -27,7 +27,7 @@ export function getBookmarksByTags(userId: string, tagNames: string[]) {
     orderBy: { createdAt: "desc" },
     include: {
       list: { select: { id: true, name: true, icon: true } },
-      tags: { include: { tag: { select: { id: true, name: true } } } },
+      tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
       _count: { select: { comments: true } },
     },
   });
@@ -49,7 +49,7 @@ export function getBookmarksWithCoords(userId: string, listIds?: string[]) {
     },
     include: {
       list: { select: { id: true, name: true, icon: true } },
-      tags: { include: { tag: { select: { id: true, name: true } } } },
+      tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
       _count: { select: { comments: true } },
     },
   });
@@ -79,7 +79,7 @@ export async function getBookmarkForUser(userId: string, bookmarkId: string) {
     where: { id: bookmarkId },
     include: {
       list: { select: { id: true, name: true, icon: true } },
-      tags: { include: { tag: { select: { id: true, name: true } } } },
+      tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
     },
   });
   if (!bookmark) return null;

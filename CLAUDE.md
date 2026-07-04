@@ -4,7 +4,8 @@
 
 Bookmarking app where bookmarks live inside shareable **lists**. A bookmark has a name,
 description, multiple URLs (`urls[0]` = original source), extracted **photos** (`images[]`),
-notes, location, 0–5 rating, visited flag, and user-scoped **tags**. Lists are drag-reorderable
+notes, location, 0–5 rating, visited flag, and user-scoped **tags** (each auto-assigned a color at
+creation, rendered on the tag pills). Lists are drag-reorderable
 (per-user), searchable (name + OR tag filter), and shareable by inviting **viewers** (view +
 comment) or **collaborators** (edit + comment); the **owner** manages membership. Lists and
 bookmarks both support **comments**. Pasting a link auto-fills a bookmark from page metadata (and

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireOnboardedUser } from "@/lib/session";
 import { getListForUser } from "@/lib/lists";
 import { getBookmarksForList } from "@/lib/bookmarks";
-import { getUserTagNames } from "@/lib/tags";
+import { getUserTags } from "@/lib/tags";
 import { getListComments } from "@/lib/comments";
 import { roleAtLeast } from "@/lib/permissions";
 import { updateList, deleteList } from "@/lib/actions/lists";
@@ -35,11 +35,13 @@ export default async function ListPage({
   const canDelete = role === "OWNER";
   const ownerName = list.owner.displayName ?? list.owner.name ?? "Someone";
 
-  const [bookmarkRows, tagSuggestions, comments] = await Promise.all([
+  const [bookmarkRows, userTags, comments] = await Promise.all([
     getBookmarksForList(id),
-    getUserTagNames(user.id),
+    getUserTags(user.id),
     getListComments(id),
   ]);
+  const tagSuggestions = userTags.map((t) => t.name);
+  const tagColors = Object.fromEntries(userTags.map((t) => [t.name, t.color]));
 
   const bookmarks: BookmarkCardData[] = bookmarkRows.map((b) => ({
     id: b.id,
@@ -121,6 +123,7 @@ export default async function ListPage({
             listId={id}
             tagSuggestions={tagSuggestions}
             listTags={listTags}
+            tagColors={tagColors}
           />
         )}
 

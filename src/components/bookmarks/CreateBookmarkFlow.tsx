@@ -17,9 +17,11 @@ import { createBookmarkInLists } from "@/lib/actions/bookmarks";
 export function CreateBookmarkFlow({
   listOptions,
   tagSuggestions,
+  tagColors,
 }: {
   listOptions: { id: string; name: string; icon: string }[];
   tagSuggestions: string[];
+  tagColors?: Record<string, string>;
 }) {
   const router = useRouter();
   const [selectedListIds, setSelectedListIds] = useState<string[]>([]);
@@ -123,6 +125,7 @@ export function CreateBookmarkFlow({
         action={handleCreate}
         submitLabel="Create"
         tagSuggestions={tagSuggestions}
+        tagColors={tagColors}
       />
     </div>
   );

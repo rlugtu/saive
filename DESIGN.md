@@ -105,7 +105,7 @@ Bookmark        id, listId, name, description, urls (string[]),
                 --   picked from Mapbox autocomplete (null for free text);
                 -- videoUrl/videoType = detected playable video ("iframe"|"file")
 
-Tag             id, name, userId          — unique per (userId, name)
+Tag             id, name, color, userId   — unique per (userId, name); color = random hex assigned at creation
 BookmarkTag     bookmarkId, tagId         — join table
 
 Comment         id, authorId, value, createdAt,
@@ -239,6 +239,11 @@ Pause for review after **each** step.
   server action (`createBookmarkInLists` in `src/lib/actions/bookmarks.ts`) writes **one independent
   bookmark row per target list** (each with its own tag links), so editing or deleting one copy
   never affects the others. New lists are made via the shared `createListRecord` (`src/lib/lists.ts`).
+- **Colored tags**: each `Tag` carries a `color` (hex) assigned at creation from a fixed palette
+  (`src/lib/tag-colors.ts`), chosen to avoid colors of other tags already in that list (best-effort —
+  tags are user-scoped, so one color per tag follows it everywhere). `syncBookmarkTags` assigns it;
+  `PixelBadge` renders it with a luminance-computed text color (legible on all themes). Tag pills are
+  colored everywhere (cards, detail, filter/search pills, editor); new/draft tags stay neutral.
 
 ---
 

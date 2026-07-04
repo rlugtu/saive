@@ -46,12 +46,14 @@ export function BookmarkForm({
   submitLabel,
   tagSuggestions = [],
   existingTags = [],
+  tagColors = {},
 }: {
   action: (formData: FormData) => void | Promise<void>;
   defaults?: Partial<BookmarkDefaults>;
   submitLabel: string;
   tagSuggestions?: string[];
   existingTags?: string[];
+  tagColors?: Record<string, string>;
 }) {
   const [name, setName] = useState(defaults?.name ?? "");
   const [urls, setUrls] = useState(defaults?.urls ?? "");
@@ -276,6 +278,7 @@ export function BookmarkForm({
           defaultValue={defaults?.tags ?? []}
           suggestions={tagSuggestions}
           existing={existingTags}
+          tagColors={tagColors}
         />
       </div>
 

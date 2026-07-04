@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireOnboardedUser } from "@/lib/session";
 import { getUserLists } from "@/lib/lists";
 import { getBookmarksByTags } from "@/lib/bookmarks";
-import { getUserTagNames } from "@/lib/tags";
+import { getUserTags } from "@/lib/tags";
 import type { ListCardData } from "@/lib/types";
 import { CreateListPanel } from "@/components/lists/CreateListPanel";
 import { HomeLists } from "@/components/lists/HomeLists";
@@ -31,10 +31,12 @@ export default async function Home({
   const user = await requireOnboardedUser();
   const selectedTags = parseTags((await searchParams).tags);
 
-  const [memberships, tagOptions] = await Promise.all([
+  const [memberships, userTags] = await Promise.all([
     getUserLists(user.id),
-    getUserTagNames(user.id),
+    getUserTags(user.id),
   ]);
+  const tagOptions = userTags.map((t) => t.name);
+  const tagColors = Object.fromEntries(userTags.map((t) => [t.name, t.color]));
 
   const lists: ListCardData[] = memberships.map((m) => ({
     id: m.listId,
@@ -90,6 +92,7 @@ export default async function Home({
         lists={listOptions}
         tags={tagOptions}
         selected={selectedTags}
+        tagColors={tagColors}
       />
 
       {filtering ? (

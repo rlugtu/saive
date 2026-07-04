@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireOnboardedUser } from "@/lib/session";
 import { getBookmarkForUser } from "@/lib/bookmarks";
 import { getBookmarkComments } from "@/lib/comments";
-import { getUserTagNames } from "@/lib/tags";
+import { getUserTags } from "@/lib/tags";
 import { roleAtLeast } from "@/lib/permissions";
 import { deleteBookmark } from "@/lib/actions/bookmarks";
 import { addBookmarkComment } from "@/lib/actions/comments";
@@ -37,10 +37,14 @@ export default async function BookmarkPage({
   const tagNames = bookmark.tags.map((bt) => bt.tag.name);
   const [primaryUrl, ...otherUrls] = bookmark.urls;
 
-  const [tagSuggestions, comments] = await Promise.all([
-    canEdit ? getUserTagNames(user.id) : Promise.resolve<string[]>([]),
+  const [userTags, comments] = await Promise.all([
+    canEdit
+      ? getUserTags(user.id)
+      : Promise.resolve<{ name: string; color: string }[]>([]),
     getBookmarkComments(bid),
   ]);
+  const tagSuggestions = userTags.map((t) => t.name);
+  const tagColors = Object.fromEntries(userTags.map((t) => [t.name, t.color]));
 
   const editDefaults = {
     name: bookmark.name,
@@ -66,6 +70,7 @@ export default async function BookmarkPage({
         bookmarkId={bookmark.id}
         defaults={editDefaults}
         tagSuggestions={tagSuggestions}
+        tagColors={tagColors}
       />
 
       {/* Hero */}
@@ -121,11 +126,11 @@ export default async function BookmarkPage({
           />
         )}
 
-        {tagNames.length > 0 && (
+        {bookmark.tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {tagNames.map((name) => (
-              <PixelBadge key={name} tone="primary">
-                {name}
+            {bookmark.tags.map((bt) => (
+              <PixelBadge key={bt.tag.id} color={bt.tag.color || undefined}>
+                {bt.tag.name}
               </PixelBadge>
             ))}
           </div>

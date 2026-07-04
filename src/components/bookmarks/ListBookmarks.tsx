@@ -29,6 +29,12 @@ export function ListBookmarks({
     ...new Set(bookmarks.flatMap((b) => b.tags.map((t) => t.name))),
   ].sort((a, b) => a.localeCompare(b));
 
+  // name → assigned color, for coloring filter pills and dropdown swatches.
+  const tagColor = new Map<string, string>();
+  for (const b of bookmarks) {
+    for (const t of b.tags) if (t.color) tagColor.set(t.name, t.color);
+  }
+
   const q = query.trim().toLowerCase();
   const matchedTags = q
     ? availableTags
@@ -94,7 +100,11 @@ export function ListBookmarks({
                   onClick={() => addTag(t)}
                   className="hover:bg-primary/15 flex w-full cursor-pointer items-center gap-2 px-2 py-1.5 text-left"
                 >
-                  <span aria-hidden>🏷️</span>
+                  <span
+                    aria-hidden
+                    className="border-border inline-block h-3 w-3 shrink-0 border"
+                    style={{ backgroundColor: tagColor.get(t) || "transparent" }}
+                  />
                   <span className="truncate">{t}</span>
                 </button>
               ))}
@@ -116,7 +126,11 @@ export function ListBookmarks({
                 transition={{ duration: 0.15 }}
                 className="inline-flex"
               >
-                <PixelBadge tone="primary" onRemove={() => removeTag(tag)}>
+                <PixelBadge
+                  tone="primary"
+                  color={tagColor.get(tag) || undefined}
+                  onRemove={() => removeTag(tag)}
+                >
                   {tag}
                 </PixelBadge>
               </motion.span>

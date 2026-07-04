@@ -14,12 +14,15 @@ export function TagInput({
   defaultValue = [],
   suggestions = [],
   existing = [],
+  tagColors = {},
 }: {
   name?: string;
   defaultValue?: string[];
   suggestions?: string[];
   /** Tags already used in this list, offered as clickable quick-add chips. */
   existing?: string[];
+  /** name → assigned hex color for known tags; new/draft tags stay neutral. */
+  tagColors?: Record<string, string>;
 }) {
   const [tags, setTags] = useState<string[]>(defaultValue);
   const [draft, setDraft] = useState("");
@@ -63,7 +66,11 @@ export function TagInput({
                 transition={{ duration: 0.15 }}
                 className="inline-flex"
               >
-                <PixelBadge tone="primary" onRemove={() => removeTag(tag)}>
+                <PixelBadge
+                  tone="primary"
+                  color={tagColors[tag] || undefined}
+                  onRemove={() => removeTag(tag)}
+                >
                   {tag}
                 </PixelBadge>
               </motion.span>
@@ -102,9 +109,14 @@ export function TagInput({
                 key={t}
                 type="button"
                 onClick={() => addTag(t)}
-                className="font-pixel border-border bg-panel hover:border-primary cursor-pointer border-2 px-2 py-1 text-sm uppercase"
+                className="font-pixel border-border bg-panel hover:border-primary flex cursor-pointer items-center gap-1.5 border-2 px-2 py-1 text-sm uppercase"
               >
-                ＋ {t}
+                <span
+                  aria-hidden
+                  className="border-border inline-block h-3 w-3 shrink-0 border"
+                  style={{ backgroundColor: tagColors[t] || "transparent" }}
+                />
+                {t}
               </button>
             ))}
           </div>
