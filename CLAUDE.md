@@ -47,7 +47,12 @@ from `main`.
 - **Prisma 7**: `migrate dev` does NOT reliably regenerate the client — run `npx prisma generate`
   explicitly after any schema change, then restart dev. (Verify: `grep -c <field>
   src/generated/prisma/models/<Model>.ts`.)
-- `.env` holds Supabase + Google + better-auth secrets (gitignored); `.env.example` documents them.
+- `.env` holds Supabase + Google + better-auth + **Geoapify** secrets (gitignored); `.env.example`
+  documents them. `GEOAPIFY_API_KEY` must also be set in the deploy host's env (not just local).
 - Link autofill uses **Microlink** (free tier is IP-rate-limited) with YouTube via oEmbed;
   `fetchLinkMetadata` logs `[link-metadata]` on the server.
+- Location field is a **Geoapify** autocomplete (`searchPlaces` in `lib/actions/places.ts`, proxied
+  server-side, `[places]` log prefix, soft `bias=countrycode:us`); picked places store
+  `latitude`/`longitude` and the address opens in a maps app via `LocationLink`. Degrades to plain
+  text if the key is unset. No in-app map (a Leaflet mini-map was built then removed).
 - Bookmark **images are hotlinked remote URLs** (can break if the source blocks hotlinking).

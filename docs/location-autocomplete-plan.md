@@ -1,8 +1,15 @@
-# Bookmark location: address / business autocomplete + mini map
+# Bookmark location: address / business autocomplete (+ mini map, since removed)
 
-> **Status: implemented (2026-07-03).** Provider bias set to soft `bias=countrycode:us`.
-> Built steps A–G; `npm run lint` + `npm run build` green. Live browser verification of
-> create/edit + map pending.
+> **Status: shipped (2026-07-03), then revised.** Provider bias set to soft
+> `bias=countrycode:us`. The autocomplete + coordinate storage shipped as planned (steps A–E, G).
+>
+> **The Leaflet/OSM mini-map (step F + the map render in G) was removed** — only the address was
+> needed. `react-leaflet`/`leaflet`/`@types/leaflet` were uninstalled and `LocationMap.tsx` /
+> `LocationMapClient.tsx` deleted. The map sections below are kept for historical context only.
+>
+> **Instead**, the stored `latitude`/`longitude` now power a tappable address that opens the place
+> in a native maps app (`src/components/bookmarks/LocationLink.tsx`): an Apple Maps / Google Maps
+> chooser on Apple devices, Google Maps directly elsewhere (pin/search view).
 
 ## Context
 Today a bookmark's `location` is a single free-text `String @default("")` — typed manually,
