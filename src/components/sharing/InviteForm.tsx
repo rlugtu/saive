@@ -24,7 +24,7 @@ export function InviteForm({ listId }: { listId: string }) {
         <select
           name="role"
           defaultValue="VIEWER"
-          className="pixel-box-sm bg-panel text-ink cursor-pointer px-2"
+          className="pixel-box-sm bg-panel text-ink cursor-pointer px-2 text-base"
         >
           <option value="VIEWER">Viewer</option>
           <option value="COLLABORATOR">Collaborator</option>

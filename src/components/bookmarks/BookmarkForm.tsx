@@ -255,7 +255,7 @@ export function BookmarkForm({
       <Field label="Description">
         <PixelTextarea
           name="description"
-          rows={2}
+          rows={5}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Best tonkotsu in town"
