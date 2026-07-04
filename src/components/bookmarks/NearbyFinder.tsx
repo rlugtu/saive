@@ -4,8 +4,9 @@ import { useState } from "react";
 import { PixelButton } from "@/components/ui/PixelButton";
 import { BookmarkCard } from "./BookmarkCard";
 import { cn } from "@/lib/utils";
-import { NEARBY_RANGES_MI, formatMiles } from "@/lib/geo";
+import { NEARBY_RANGES_MI, formatMiles, formatCoords } from "@/lib/geo";
 import { findNearbyBookmarks, type NearbyBookmark } from "@/lib/actions/nearby";
+import { reverseGeocode } from "@/lib/actions/places";
 
 type Status = "idle" | "locating" | "searching" | "done" | "error";
 
@@ -29,6 +30,7 @@ export function NearbyFinder({
   const [results, setResults] = useState<NearbyBookmark[]>([]);
   const [skipped, setSkipped] = useState(0);
   const [searchedRadius, setSearchedRadius] = useState(5);
+  const [locationLabel, setLocationLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const allSelected = selectedListIds.length === listOptions.length;
@@ -43,6 +45,7 @@ export function NearbyFinder({
 
   function findNearby() {
     setError(null);
+    setLocationLabel(null);
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
       setStatus("error");
       setError("Geolocation isn't supported in this browser.");
@@ -52,13 +55,19 @@ export function NearbyFinder({
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         setStatus("searching");
+        const { latitude: lat, longitude: lon } = pos.coords;
         const usedRadius = radiusMiles;
-        const res = await findNearbyBookmarks({
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-          radiusMiles: usedRadius,
-          listIds: selectedListIds,
-        });
+        // Resolve the readable address alongside the search so it adds no serial latency.
+        const [res, place] = await Promise.all([
+          findNearbyBookmarks({
+            lat,
+            lon,
+            radiusMiles: usedRadius,
+            listIds: selectedListIds,
+          }),
+          reverseGeocode(lat, lon),
+        ]);
+        setLocationLabel(place.ok ? place.data.address : formatCoords(lat, lon));
         if (res.ok) {
           setResults(res.data);
           setSkipped(res.skipped);
@@ -155,6 +164,19 @@ export function NearbyFinder({
       {/* Results */}
       {status === "done" && (
         <section className="flex flex-col gap-4">
+          {locationLabel && (
+            <div className="pixel-box-sm bg-panel flex items-start gap-2 px-3 py-2.5">
+              <span aria-hidden className="text-lg leading-none">
+                📍
+              </span>
+              <div className="flex flex-col">
+                <span className="font-pixel text-muted text-xs font-bold">
+                  Your location
+                </span>
+                <span className="text-ink text-sm">{locationLabel}</span>
+              </div>
+            </div>
+          )}
           <h2 className="font-pixel text-sm">
             {results.length} bookmark{results.length === 1 ? "" : "s"} within{" "}
             {searchedRadius} mi

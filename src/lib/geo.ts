@@ -26,3 +26,8 @@ export function haversineMiles(
 export function formatMiles(mi: number): string {
   return `${mi.toFixed(1)} mi`;
 }
+
+/** Fallback readout of a coordinate pair, e.g. `37.7749°, -122.4194°`. */
+export function formatCoords(lat: number, lon: number): string {
+  return `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
+}

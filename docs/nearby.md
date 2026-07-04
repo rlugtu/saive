@@ -3,7 +3,8 @@
 ## Overview
 `/nearby` lets a user find bookmarks close to where they are right now. The user picks a **radius**
 and (optionally) narrows to a subset of their lists, taps **Find near me**, and — after granting
-the browser's geolocation prompt — sees the in-range bookmarks ordered **closest→farthest**, each
+the browser's geolocation prompt — sees their detected location as a readable address in a banner
+above the results, then the in-range bookmarks ordered **closest→farthest**, each
 tagged with its list and its distance ("2.3 mi away"). Reached from a header button on Home.
 Opening a result and tapping **← Back** on the bookmark page returns here (it uses browser
 history), with the previous results still shown.
@@ -22,7 +23,10 @@ work happens in a server action (server-first, no separate HTTP API):
 2. **`src/components/bookmarks/NearbyFinder.tsx`** (`"use client"`) — radius `<select>`
    (`NEARBY_RANGES_MI`), per-list toggle chips (all selected by default; Select-all / Clear-all),
    and the **Find near me** button. On click it calls `navigator.geolocation.getCurrentPosition`,
-   then the server action, and renders results with `BookmarkCard` (its `listLabel` +
+   then — in parallel — the search server action and `reverseGeocode` (`lib/actions/places.ts`,
+   Mapbox Geocoding v6) to turn the coordinates into a readable address, shown in a **banner above
+   the results** (falls back to formatted coordinates via `formatCoords` if the lookup fails or
+   `MAPBOX_TOKEN` is unset). Renders results with `BookmarkCard` (its `listLabel` +
    `distanceLabel` props). Handles locating/searching/empty/skipped/no-lists/permission-error states.
 3. **`src/lib/actions/nearby.ts`** — `findNearbyBookmarks({ lat, lon, radiusMiles, listIds })`:
    `requireUser()`, fetch candidate bookmarks, haversine-filter to the radius, sort ascending, and
@@ -31,7 +35,11 @@ work happens in a server action (server-first, no separate HTTP API):
 
 ## Supporting pieces
 - **`src/lib/geo.ts`** — `haversineMiles(lat1, lon1, lat2, lon2)`, `NEARBY_RANGES_MI`
-  (`[0.5, 1, 2, 5, 10]`, miles), and `formatMiles(mi)`.
+  (`[0.5, 1, 2, 5, 10]`, miles), `formatMiles(mi)`, and `formatCoords(lat, lon)` (the banner's
+  coordinate fallback).
+- **`src/lib/actions/places.ts`** — `reverseGeocode(lat, lon)` proxies Mapbox Geocoding v6
+  `/reverse` (token stays server-side, `[places]` log prefix); best-effort, returns
+  `{ ok: false }` so the client falls back to coordinates.
 - **`src/lib/bookmarks.ts`** — `getBookmarksWithCoords(userId, listIds?)` (bookmarks across the
   user's lists with non-null coordinates, optional list filter; same include shape as the tag
   search so results render with a list tag) and `countBookmarksMissingCoords(userId, listIds?)`

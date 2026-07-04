@@ -27,9 +27,14 @@ export type RetrieveResult =
   | { ok: true; data: RetrievedPlace }
   | { ok: false; error: string };
 
+export type ReverseGeocodeResult =
+  | { ok: true; data: { label: string; address: string } }
+  | { ok: false; error: string };
+
 const MIN_QUERY_LENGTH = 3;
 const LIMIT = 6;
 const SEARCHBOX_BASE = "https://api.mapbox.com/search/searchbox/v1";
+const GEOCODE_BASE = "https://api.mapbox.com/search/geocode/v6";
 
 // Mapbox Search Box /suggest result (coordinates are NOT included — see retrievePlace).
 type SuggestFeature = {
@@ -37,6 +42,15 @@ type SuggestFeature = {
   name?: string;
   place_formatted?: string;
   full_address?: string;
+};
+
+// Mapbox Geocoding v6 /reverse result: a GeoJSON FeatureCollection.
+type GeocodeFeature = {
+  properties?: {
+    name?: string;
+    full_address?: string;
+    place_formatted?: string;
+  };
 };
 
 // Mapbox Search Box /retrieve result: a GeoJSON FeatureCollection.
@@ -178,6 +192,54 @@ export async function retrievePlace(
     };
   } catch (err) {
     console.warn(`[places] retrieve failed for "${id}":`, (err as Error).message);
+    return { ok: false, error: `Location lookup failed: ${(err as Error).message}` };
+  }
+}
+
+/**
+ * Mapbox Geocoding v6 /reverse — turns a lat/lon (e.g. the browser's geolocation) into a
+ * readable address. Best-effort: returns `{ ok: false }` on missing token / non-OK status /
+ * no result so callers can fall back to showing raw coordinates. Distinct from the Search
+ * Box endpoints above (no session token — reverse geocoding isn't part of a type-ahead session).
+ */
+export async function reverseGeocode(
+  lat: number,
+  lon: number,
+): Promise<ReverseGeocodeResult> {
+  await requireUser();
+
+  const key = mapboxToken();
+  if (!key) return { ok: false, error: "Location lookup is not configured." };
+
+  const endpoint =
+    `${GEOCODE_BASE}/reverse?longitude=${encodeURIComponent(lon)}` +
+    `&latitude=${encodeURIComponent(lat)}&limit=1&language=en&access_token=${key}`;
+
+  try {
+    const res = await fetch(endpoint, {
+      headers: { accept: "application/json" },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      console.warn(`[places] mapbox reverse returned ${res.status} for ${lat},${lon}`);
+      return { ok: false, error: httpError(res.status) };
+    }
+
+    const json = (await res.json()) as { features?: GeocodeFeature[] };
+    const props = json.features?.[0]?.properties;
+    if (!props) return { ok: false, error: "No address found for that location." };
+
+    const address = props.full_address || props.place_formatted || props.name || "";
+    if (!address) return { ok: false, error: "No address found for that location." };
+
+    console.log(`[places] reverse ${lat},${lon} → "${address}"`);
+    return {
+      ok: true,
+      data: { label: props.name || props.place_formatted || address, address },
+    };
+  } catch (err) {
+    console.warn(`[places] reverse failed for ${lat},${lon}:`, (err as Error).message);
     return { ok: false, error: `Location lookup failed: ${(err as Error).message}` };
   }
 }

@@ -20,6 +20,9 @@ membership. Both lists and bookmarks support **comments**. Pasting a link (YouTu
 auto-fills a bookmark from the page's metadata. The whole thing wears a **retro 8-bit** skin and
 is an installable **PWA**.
 
+For a benefit-first, marketing-oriented summary of the app and its headline features, see
+**`docs/marketing.md`** (kept in sync as features ship).
+
 ---
 
 ## 1. Stack
