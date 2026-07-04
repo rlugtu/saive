@@ -109,7 +109,7 @@ export function LocationLink({
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.12 }}
             role="menu"
-            // Above the Leaflet map below it (Leaflet panes/controls reach ~z-index 1000).
+            // High z-index so the menu floats above any surrounding page chrome.
             className="pixel-box bg-panel absolute z-[1200] mt-2 min-w-[12rem] overflow-hidden p-1"
           >
             {options.map((o) => (

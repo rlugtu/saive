@@ -71,8 +71,7 @@ Resolved during planning (most-recent context in parentheses):
 - **`location`**: address/business type-ahead via Mapbox Search Box (server-proxied); stores the display
   address plus `latitude`/`longitude`. On the bookmark page the address is tappable and opens the
   place in a maps app (Apple Maps / Google Maps chooser on Apple devices, Google Maps elsewhere).
-  Free-typed text still saves with no coordinates. No in-app map UI (a Leaflet mini-map was built
-  then removed as unneeded).
+  Free-typed text still saves with no coordinates. No in-app map UI.
 - **Realtime**: out of scope for v1 — comments/edits refresh on action. Supabase realtime can
   come later.
 
@@ -314,8 +313,7 @@ These are optional and can be done when RN work actually starts — none block t
 
 - **Location autocomplete** (shipped): the bookmark `location` is an address/business type-ahead
   via Mapbox Search Box (server-proxied), storing `latitude`/`longitude`; the address on the bookmark page
-  opens the place in a maps app. See **`docs/location-autocomplete-plan.md`**. A Leaflet/OSM
-  mini-map was built alongside it but removed — only the address was needed.
+  opens the place in a maps app. See **`docs/location-autocomplete.md`**.
 - **Share target** (deferred): manifest `share_target` + `/share` route for Android/desktop PWAs;
   iOS Safari can't receive shares (Apple limitation) — would need an iOS Shortcut forwarding to
   `/share?url=` or a native share extension.

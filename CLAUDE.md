@@ -56,5 +56,5 @@ from `main`.
   (/suggest) returns coordinate-less suggestions, `retrievePlace` (/retrieve) resolves the
   picked one's `latitude`/`longitude`; both share a client `session_token` for session billing.
   The address opens in a maps app via `LocationLink`. Degrades to plain text if the token is
-  unset. No in-app map (a Leaflet mini-map was built then removed).
+  unset. No in-app map.
 - Bookmark **images are hotlinked remote URLs** (can break if the source blocks hotlinking).
