@@ -7,6 +7,7 @@ import {
   searchPlaces,
   retrievePlace,
   type PlaceSuggestion,
+  type RetrievedPlace,
 } from "@/lib/actions/places";
 
 const MIN_QUERY_LENGTH = 3;
@@ -24,10 +25,14 @@ export function LocationInput({
   initialLocation = "",
   initialLat = null,
   initialLon = null,
+  onAutofill,
 }: {
   initialLocation?: string;
   initialLat?: number | null;
   initialLon?: number | null;
+  // Called after a successful retrieve so the parent form can autofill from a
+  // picked business. Purely additive — location/coords are still set here.
+  onAutofill?: (place: RetrievedPlace) => void;
 }) {
   const [query, setQuery] = useState(initialLocation);
   const [lat, setLat] = useState<number | null>(initialLat);
@@ -94,6 +99,7 @@ export function LocationInput({
       }
       setLat(result.data.lat);
       setLon(result.data.lon);
+      onAutofill?.(result.data);
     } else {
       // No coordinates — the text still submits and LocationLink falls back to a search.
       setError(result.error);
@@ -123,7 +129,7 @@ export function LocationInput({
         onKeyDown={(e) => {
           if (e.key === "Escape") setOpen(false);
         }}
-        placeholder="Ramen Nagi · 1600 Amphitheatre Pkwy…"
+        placeholder="Search a place or business…"
         aria-label="Location"
         autoComplete="off"
       />

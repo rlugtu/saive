@@ -17,6 +17,10 @@ export type RetrievedPlace = {
   address: string;
   lat: number;
   lon: number;
+  name: string; // business/POI name (empty for plain addresses)
+  category: string; // first POI category, title-cased (e.g. "Restaurant")
+  website: string; // best-effort business website from Mapbox metadata
+  isPoi: boolean; // true when the feature is a point of interest (a business)
 };
 
 export type RetrieveResult =
@@ -42,8 +46,17 @@ type RetrieveFeature = {
     name?: string;
     full_address?: string;
     place_formatted?: string;
+    feature_type?: string;
+    poi_category?: string[];
+    // Undocumented but present for some POIs — best-effort only.
+    metadata?: { website?: string; phone?: string };
   };
 };
+
+/** Title-case a Mapbox POI category slug, e.g. "restaurant" → "Restaurant". */
+function titleCase(s: string): string {
+  return s.replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function mapboxToken(): string | null {
   const key = process.env.MAPBOX_TOKEN;
@@ -149,6 +162,7 @@ export async function retrievePlace(
     }
 
     const props = feature.properties ?? {};
+    const category = props.poi_category?.[0] ? titleCase(props.poi_category[0]) : "";
     return {
       ok: true,
       data: {
@@ -156,6 +170,10 @@ export async function retrievePlace(
         address: props.full_address || props.place_formatted || props.name || "",
         lat: coords[1],
         lon: coords[0],
+        name: props.name || "",
+        category,
+        website: props.metadata?.website ?? "",
+        isPoi: props.feature_type === "poi",
       },
     };
   } catch (err) {

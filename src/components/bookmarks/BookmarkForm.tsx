@@ -10,6 +10,7 @@ import { RatingInput } from "./RatingInput";
 import { TagInput } from "./TagInput";
 import { LocationInput } from "./LocationInput";
 import { fetchLinkMetadata } from "@/lib/actions/metadata";
+import type { RetrievedPlace } from "@/lib/actions/places";
 
 export type BookmarkDefaults = {
   name: string;
@@ -107,34 +108,99 @@ export function BookmarkForm({
     setLink("");
   }
 
+  // Autofill the bookmark when a business is picked in the Location field. Each pick overwrites
+  // the managed fields to reflect the newly-picked business (name/url/description/images/video),
+  // then enriches from the website unfurl when present. Location/coords are set by LocationInput.
+  async function handleLocationAutofill(place: RetrievedPlace) {
+    if (!place.isPoi) return; // plain address — location only, unchanged behavior
+
+    // Overwrite the managed fields to reflect the newly-picked business.
+    setName(place.name);
+    setUrls(place.website); // "" clears the field when the business has no site
+    setDescription(place.category); // provisional; the unfurl may replace it
+    setImages([]);
+    setVideoUrl("");
+    setVideoType("");
+
+    if (!place.website) return;
+
+    setLoading(true);
+    const result = await fetchLinkMetadata(place.website);
+    setLoading(false);
+    if (!result.ok) return; // keep the basics set above
+
+    const d = result.data;
+    if (d.title && !place.name) setName(d.title);
+    if (d.description) setDescription(d.description);
+    if (d.images.length) setImages(d.images);
+    if (d.video) {
+      setVideoUrl(d.video.url);
+      setVideoType(d.video.type);
+    }
+  }
+
   return (
     <form action={action} className="flex flex-col gap-4">
-      {/* Paste-to-autofill */}
-      <div className="flex flex-col gap-1.5">
-        <FieldLabel>Paste a link to autofill</FieldLabel>
-        <div className="flex gap-2">
-          <PixelInput
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void autofill();
-              }
-            }}
-            placeholder="YouTube · TikTok · Instagram · blog…"
-          />
-          <PixelButton
-            type="button"
-            size="sm"
-            onClick={() => void autofill()}
-            disabled={loading}
-          >
-            {loading ? "…" : "Autofill"}
-          </PixelButton>
+      {/* Autofill shortcut — start from a link or a place, then edit anything below. */}
+      <section
+        aria-label="Autofill"
+        className="pixel-box-sm bg-primary/10 flex flex-col gap-3 p-4"
+      >
+        <div className="flex flex-col gap-0.5">
+          <span className="font-pixel text-sm font-bold uppercase">
+            ✨ Autofill
+          </span>
+          <span className="text-muted text-sm">
+            Start from a link or a place — we&apos;ll fill the rest.
+          </span>
         </div>
-        {error && <p className="text-danger text-sm">{error}</p>}
-      </div>
+
+        {/* From a link */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex gap-2">
+            <PixelInput
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void autofill();
+                }
+              }}
+              placeholder="YouTube · TikTok · Instagram · blog…"
+            />
+            <PixelButton
+              type="button"
+              size="sm"
+              onClick={() => void autofill()}
+              disabled={loading}
+            >
+              {loading ? "…" : "Autofill"}
+            </PixelButton>
+          </div>
+          {error && <p className="text-danger text-sm">{error}</p>}
+        </div>
+
+        {/* divider */}
+        <div className="flex items-center gap-3" aria-hidden>
+          <span className="border-border flex-1 border-t-2" />
+          <span className="font-pixel text-muted text-xs uppercase">or</span>
+          <span className="border-border flex-1 border-t-2" />
+        </div>
+
+        {/* From a place */}
+        <div className="flex flex-col gap-1.5">
+          <LocationInput
+            initialLocation={defaults?.location ?? ""}
+            initialLat={defaults?.latitude ?? null}
+            initialLon={defaults?.longitude ?? null}
+            onAutofill={handleLocationAutofill}
+          />
+          <p className="text-muted text-sm">
+            Pick a business to autofill its name, photos &amp; details.
+          </p>
+        </div>
+      </section>
 
       <div className="relative">
         {loading && (
@@ -226,14 +292,6 @@ export function BookmarkForm({
           value={urls}
           onChange={(e) => setUrls(e.target.value)}
           placeholder="https://…"
-        />
-      </Field>
-
-      <Field label="Location">
-        <LocationInput
-          initialLocation={defaults?.location ?? ""}
-          initialLat={defaults?.latitude ?? null}
-          initialLon={defaults?.longitude ?? null}
         />
       </Field>
 
