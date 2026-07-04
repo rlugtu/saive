@@ -25,13 +25,12 @@ export function CreateBookmarkPanel({
 
   return (
     <PixelCard>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm">New bookmark</h2>
+      <div className="mb-4 flex items-center justify-end">
         <button
           type="button"
           aria-label="Close"
           onClick={() => setOpen(false)}
-          className="text-muted hover:text-danger cursor-pointer text-lg leading-none"
+          className="text-muted hover:text-danger cursor-pointer text-2xl leading-none"
         >
           ×
         </button>
