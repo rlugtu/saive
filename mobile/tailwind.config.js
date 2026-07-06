@@ -2,6 +2,23 @@
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
-  theme: { extend: {} },
+  theme: {
+    extend: {
+      // Semantic Saive colors -> CSS vars set per theme by ThemeProvider (vars()).
+      colors: {
+        bg: "var(--color-bg)",
+        panel: "var(--color-panel)",
+        ink: "var(--color-ink)",
+        muted: "var(--color-muted)",
+        primary: "var(--color-primary)",
+        "primary-ink": "var(--color-primary-ink)",
+        accent: "var(--color-accent)",
+        danger: "var(--color-danger)",
+        success: "var(--color-success)",
+        warning: "var(--color-warning)",
+        border: "var(--color-border)",
+      },
+    },
+  },
   plugins: [],
 };

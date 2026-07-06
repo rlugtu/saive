@@ -9,13 +9,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authClient } from '@/client/auth';
+import { useTheme } from '@/theme/theme-provider';
+import { THEME_TOKENS } from '@/theme/tokens';
 
 /**
  * Sign-in against web's better-auth server. Email/password works out of the box;
  * Google uses the social flow (needs a native OAuth client id configured — see
- * DESIGN.md / mobile setup notes).
+ * DESIGN.md / mobile setup notes). Styled with the shared Saive tokens.
  */
 export default function LoginScreen() {
+  const { theme } = useTheme();
+  const muted = THEME_TOKENS[theme].muted;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -41,19 +46,15 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white dark:bg-black">
+    <SafeAreaView style={{ flex: 1 }} className="bg-bg">
       <View className="flex-1 justify-center gap-3 px-6">
-        <Text className="text-center text-3xl font-bold text-black dark:text-white">
-          Saive
-        </Text>
-        <Text className="mb-4 text-center text-neutral-500">
-          Sign in to your bookmarks
-        </Text>
+        <Text className="text-center text-3xl font-bold text-ink">Saive</Text>
+        <Text className="mb-4 text-center text-muted">Sign in to your bookmarks</Text>
 
         <TextInput
-          className="rounded-lg border border-neutral-300 px-4 py-3 text-black dark:border-neutral-700 dark:text-white"
+          className="rounded-lg border border-border px-4 py-3 text-ink"
           placeholder="Email"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={muted}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
@@ -61,34 +62,32 @@ export default function LoginScreen() {
           onChangeText={setEmail}
         />
         <TextInput
-          className="rounded-lg border border-neutral-300 px-4 py-3 text-black dark:border-neutral-700 dark:text-white"
+          className="rounded-lg border border-border px-4 py-3 text-ink"
           placeholder="Password"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={muted}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
 
-        {error && <Text className="text-center text-red-500">{error}</Text>}
+        {error && <Text className="text-center text-danger">{error}</Text>}
 
         <Pressable
-          className="items-center rounded-lg bg-black py-3 dark:bg-white"
+          className="items-center rounded-lg bg-primary py-3"
           disabled={busy}
           onPress={signInEmail}>
           {busy ? (
-            <ActivityIndicator />
+            <ActivityIndicator color={THEME_TOKENS[theme].primaryInk} />
           ) : (
-            <Text className="font-semibold text-white dark:text-black">Sign in</Text>
+            <Text className="font-semibold text-primary-ink">Sign in</Text>
           )}
         </Pressable>
 
         <Pressable
-          className="items-center rounded-lg border border-neutral-300 py-3 dark:border-neutral-700"
+          className="items-center rounded-lg border border-border py-3"
           disabled={busy}
           onPress={signInGoogle}>
-          <Text className="font-semibold text-black dark:text-white">
-            Continue with Google
-          </Text>
+          <Text className="font-semibold text-ink">Continue with Google</Text>
         </Pressable>
       </View>
     </SafeAreaView>
