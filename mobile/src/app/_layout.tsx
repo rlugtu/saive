@@ -1,11 +1,12 @@
 import '@/global.css';
 
+import { useEffect } from 'react';
+import { Stack } from 'expo-router';
 import {
   DarkTheme,
   DefaultTheme,
-  Stack,
   ThemeProvider as NavThemeProvider,
-} from 'expo-router';
+} from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -21,7 +22,6 @@ import {
   WorkSans_600SemiBold,
 } from '@expo-google-fonts/work-sans';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import LoginScreen from '@/components/login-screen';
 import { authClient } from '@/client/auth';
 import { ThemeProvider as AppThemeProvider } from '@/theme/theme-provider';
@@ -39,6 +39,10 @@ export default function RootLayout() {
     WorkSans_600SemiBold,
   });
 
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
   // Keep the native splash up until the Journal fonts are ready.
   if (!fontsLoaded) return null;
 
@@ -47,7 +51,6 @@ export default function RootLayout() {
       <AppThemeProvider>
         <NavThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <BottomSheetModalProvider>
-            <AnimatedSplashOverlay />
             {isPending ? (
               <View style={{ flex: 1 }} />
             ) : session ? (

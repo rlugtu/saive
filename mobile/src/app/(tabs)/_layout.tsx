@@ -1,31 +1,47 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/theme/theme-provider';
+import { THEME_TOKENS } from '@/theme/tokens';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const t = THEME_TOKENS[useTheme().theme];
 
   return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Lists</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="list.bullet" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="nearby">
-        <NativeTabs.Trigger.Label>Nearby</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="location.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="settings">
-        <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="gearshape.fill" />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: t.primary,
+        tabBarInactiveTintColor: t.muted,
+        tabBarStyle: { backgroundColor: t.panel, borderTopColor: t.border },
+      }}>
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Lists',
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Ionicons name="list" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="nearby"
+        options={{
+          title: 'Nearby',
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Ionicons name="location-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Ionicons name="settings-outline" color={color} size={size} />
+          ),
+        }}
+      />
+    </Tabs>
   );
 }

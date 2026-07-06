@@ -164,7 +164,8 @@ displayName, birthday, icon, theme).
 
 ## 6. The mobile app (a thin, typed client)
 
-**Stack:** Expo SDK 57, expo-router (file-based routes), React 19, react-native-reanimated,
+**Stack:** Expo SDK 54 (runs in **Expo Go** — no dev build), expo-router (file-based routes),
+React 19, react-native-reanimated,
 `expo-image`, NativeWind, `@trpc/client`, `@better-auth/expo`, `expo-location`,
 `expo-secure-store`.
 
@@ -194,7 +195,7 @@ modules begin with.
 
 ```
 src/app/_layout.tsx           root Stack + auth gate (login when signed out); registers routes
-  (tabs)/_layout.tsx          NativeTabs — Lists / Nearby / Settings (SF Symbol icons)
+  (tabs)/_layout.tsx          Tabs — Lists / Nearby / Settings (@expo/vector-icons)
   (tabs)/index.tsx            Home: lists + search        → push /lists/[id]
   (tabs)/nearby.tsx           radius search (expo-location → trpc.nearby.find)
   (tabs)/settings.tsx         account + theme switcher

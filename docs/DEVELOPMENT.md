@@ -13,8 +13,8 @@ the root `CLAUDE.md`/`DESIGN.md`, not code.
 
 - **Node** (v20+), npm.
 - **Postgres** via Supabase (connection strings in `web/.env`).
-- **Xcode 26+ / Swift 6.2+** and an **iOS 26+ simulator runtime** for the mobile native build
-  (Expo SDK 57 requires Swift 6.2). Install a simulator runtime with `xcodebuild -downloadPlatform iOS`.
+- **Expo Go** (App Store) on a simulator or device for the mobile app — Expo SDK 54 runs there, so
+  **no Xcode or native build is required**. (Xcode is only needed if you later make a dev/EAS build.)
 - Secrets: copy `web/.env.example` → `web/.env` and fill in `DATABASE_URL`, `BETTER_AUTH_SECRET`,
   `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID/SECRET`, `MAPBOX_TOKEN`, `ANTHROPIC_API_KEY`.
   Mobile reads only `EXPO_PUBLIC_API_URL` (the web base URL; defaults to `http://localhost:3000`).
@@ -34,21 +34,19 @@ npx prisma migrate dev --name <x>  &&  npx prisma generate   # after any schema 
 > `npx prisma generate` explicitly, then restart dev. The service worker is prod-only, so use
 > `npm run build && npm start` to exercise PWA install/offline.
 
-### Mobile (`cd mobile`)
+### Mobile (`cd mobile`) — runs in Expo Go
 ```
-npx expo run:ios       # native build + run in the simulator (needed for the dev client)
+npx expo start         # open in Expo Go (press i for the iOS simulator, or scan the QR on device)
 npx tsc --noEmit       # typecheck (the primary local gate — includes the cross-folder types)
 npx expo export --platform ios --output-dir /tmp/x   # bundle check (catches Metro/resolution errors)
 ```
-Two native gotchas that will bite you:
+The gotcha to respect:
 
-1. **Native dependencies require a rebuild.** Adding a package with native code
-   (`expo-location`, `expo-network`, …) means `npx expo run:ios` again — a Metro reload is not
-   enough. JS-only changes hot-reload.
-2. **`app.json` config-plugin changes require a prebuild.** Permissions and other native config
-   (e.g. the location usage string) only reach `ios/Info.plist` on a fresh prebuild. If a
-   plugin change "isn't taking effect," run `npx expo prebuild -p ios --clean` (safe — there's
-   no hand-edited native code), then `npx expo run:ios`.
+- **Stay Expo-Go-compatible.** Only native modules bundled in Expo Go work; everything we use
+  (`expo-*`, reanimated, gesture-handler, `@gorhom/bottom-sheet`, NativeWind, the Google fonts) is.
+  Adding a native module Expo Go doesn't ship — or bumping past the SDK Expo Go supports — forces a
+  dev/EAS build (and Xcode). `app.json` config-plugin changes (permissions) also only apply in a dev
+  build, not Expo Go.
 
 For the mobile app to load data, the web dev server must be reachable at `EXPO_PUBLIC_API_URL`
 (the iOS **simulator** reaches your Mac's `localhost`; a **physical device** needs your Mac's
@@ -136,7 +134,7 @@ keep a thin `"use server"` wrapper, and add a `protectedProcedure` in
 | web | build + lint | `cd web && npm run build && npm run lint` |
 | mobile | typecheck | `cd mobile && npx tsc --noEmit` |
 | mobile | bundle (Metro/resolution) | `npx expo export --platform ios --output-dir /tmp/x` |
-| mobile | runtime | `npx expo run:ios` + exercise the flow in the simulator |
+| mobile | runtime | `npx expo start` → open in **Expo Go** + exercise the flow |
 | API | auth wiring | unauthenticated `GET /api/trpc/lists.mine` → `401 UNAUTHORIZED` |
 
 `tsc` + `expo export` catch nearly everything on the mobile side; **NativeWind runtime styling
@@ -152,8 +150,8 @@ manual verification.
 
 - **Prisma 7:** run `npx prisma generate` explicitly after `migrate dev` (verify with
   `grep -c <field> web/src/generated/prisma/models/<Model>.ts`).
-- **Mobile native dep → rebuild;** **`app.json` plugin change → `expo prebuild --clean`.**
-- **Expo SDK 57 needs Swift 6.2** (Xcode 26) + an installed iOS simulator runtime.
+- **Mobile targets Expo Go (SDK 54)** — keep deps Expo-Go-compatible; a native module Expo Go
+  doesn't bundle, or an SDK bump past what Expo Go supports, forces a dev/EAS build.
 - **Bookmark images are hotlinked remote URLs** — they can break if the source blocks hotlinking.
 - **Nearby only sees geocoded bookmarks** (location picked from autocomplete); free-typed/legacy
   locations have no coordinates and show as an "N skipped" note.
