@@ -345,12 +345,49 @@ plain REST + types redeclared in mobile, with the API contract below as the only
 
 ### API contract (tRPC surface)
 
-*The canonical list of tRPC procedures both apps code against. Populated as Phase 1 lands — keep
-this in sync whenever a procedure is added or changed.*
+The tRPC router lives in `web/src/server/trpc/` (mounted at `/api/trpc`, alongside the auth
+handler). Every procedure is a thin wrapper over `web/src/lib/core/*` (mutations) or
+`web/src/lib/*` read modules (queries); mobile imports the `AppRouter` type only. All procedures
+are `protectedProcedure` (require a signed-in user; `ctx.user` is the session user). **Keep this
+table in sync whenever a procedure is added or changed.**
 
-| Procedure | Kind | Input | Returns | Wraps (`core`) |
+| Procedure | Kind | Input | Auth beyond sign-in | Delegates to |
 |---|---|---|---|---|
-| _(to be filled in during the tRPC transport phase)_ | | | | |
+| `lists.mine` | query | – | – | `getUserLists` |
+| `lists.get` | query | `{ listId }` | user-scoped (membership or null) | `getListForUser` |
+| `lists.create` | mutation | `ListInput` | – | `core.createList` |
+| `lists.update` | mutation | `{ listId, data: ListInput }` | COLLABORATOR (in core) | `core.updateList` |
+| `lists.delete` | mutation | `{ listId }` | OWNER (in core) | `core.deleteList` |
+| `lists.reorder` | mutation | `{ orderedListIds }` | user-scoped | `core.reorderLists` |
+| `bookmarks.forList` | query | `{ listId }` | `assertRole` VIEWER | `getBookmarksForList` |
+| `bookmarks.get` | query | `{ bookmarkId }` | membership check (or null) | `getBookmarkForUser` |
+| `bookmarks.byTags` | query | `{ tagNames }` | user-scoped | `getBookmarksByTags` |
+| `bookmarks.create` | mutation | `{ listId, data: BookmarkInput }` | COLLABORATOR (in core) | `core.createBookmark` |
+| `bookmarks.createInLists` | mutation | `{ existingListIds, newListNames, data }` | COLLABORATOR per list (in core) | `core.createBookmarkInLists` |
+| `bookmarks.update` | mutation | `{ bookmarkId, data: BookmarkInput }` | COLLABORATOR (in core) | `core.updateBookmark` |
+| `bookmarks.delete` | mutation | `{ bookmarkId }` | COLLABORATOR (in core) | `core.deleteBookmark` |
+| `bookmarks.toggleVisited` | mutation | `{ bookmarkId }` | COLLABORATOR (in core) | `core.toggleVisited` |
+| `comments.forList` | query | `{ listId }` | `assertRole` VIEWER | `getListComments` |
+| `comments.forBookmark` | query | `{ bookmarkId }` | membership check | `getBookmarkComments` |
+| `comments.addToList` | mutation | `{ listId, value }` | VIEWER (in core) | `core.addListComment` |
+| `comments.addToBookmark` | mutation | `{ bookmarkId, value }` | VIEWER (in core) | `core.addBookmarkComment` |
+| `comments.delete` | mutation | `{ commentId }` | author or OWNER (in core) | `core.deleteComment` |
+| `sharing.members` | query | `{ listId }` | `assertRole` VIEWER | `getListMembers` |
+| `sharing.pendingInvites` | query | `{ listId }` | `assertRole` OWNER | `getPendingInvites` |
+| `sharing.invite` | mutation | `{ listId, email, role }` | OWNER (in core) | `core.inviteToList` |
+| `sharing.changeRole` | mutation | `{ listId, userId, role }` | OWNER (in core) | `core.changeMemberRole` |
+| `sharing.removeMember` | mutation | `{ listId, userId }` | OWNER (in core) | `core.removeMember` |
+| `sharing.revokeInvite` | mutation | `{ inviteId }` | OWNER (in core) | `core.revokeInvite` |
+| `sharing.leave` | mutation | `{ listId }` | non-owner member (in core) | `core.leaveList` |
+| `sharing.accept` | mutation | `{ token }` | any signed-in user w/ link | `core.acceptInvite` |
+| `profile.update` | mutation | `ProfileInput` | self | `core.saveProfile` |
+| `tags.mine` | query | – | user-scoped | `getUserTags` |
+| `nearby.find` | query | `{ lat, lon, radiusMiles, listIds }` | user-scoped | `core.findNearbyBookmarks` |
+
+**Not yet exposed:** the external-service actions (`places` — Mapbox autocomplete, `metadata` —
+Microlink link/video, `comprehend` — Anthropic extraction) still live only as web server actions.
+They need thin query procedures before mobile can use autofill/geocode/AI-extract without its own
+keys.
 
 ---
 

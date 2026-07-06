@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.110.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@trpc/server": "^11.18.0",
     "better-auth": "^1.6.23",
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.2",
