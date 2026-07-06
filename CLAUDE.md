@@ -13,7 +13,9 @@ page (`/nearby`) finds geocoded bookmarks within a chosen radius of the user's c
 Two selectable **themes** — **pixel** (retro 8-bit) and
 **modern** (sleek/minimalist), each light + dark. Installable **PWA**.
 
-**Full design doc: `DESIGN.md`** (data model, permissions, routes, API contract, architecture).
+**Docs:** `DESIGN.md` (data model, permissions, routes, API contract) · `docs/ARCHITECTURE.md`
+(human-readable design + architecture overview) · `docs/DEVELOPMENT.md` (run/build/extend +
+conventions + gotchas).
 
 ## This repo = two apps that share a spec, not code
 
