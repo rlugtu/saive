@@ -1,10 +1,14 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { expo } from "@better-auth/expo";
 import { prisma } from "@/lib/db";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
+  // Allow the native app's deep-link scheme as an OAuth redirect target so the
+  // mobile Google flow (via @better-auth/expo) can return to the app.
+  trustedOrigins: ["saive://"],
   emailAndPassword: {
     enabled: true,
   },
@@ -66,6 +70,7 @@ export const auth = betterAuth({
       },
     },
   },
-  // Must be last: lets server actions set auth cookies.
-  plugins: [nextCookies()],
+  // expo() enables the @better-auth/expo native flow; nextCookies() must stay last
+  // so server actions can set auth cookies.
+  plugins: [expo(), nextCookies()],
 });
