@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { trpc } from '@/client/api';
-import { authClient } from '@/client/auth';
 
 // Inferred straight from web's tRPC procedure — no hand-written DTOs.
 type Memberships = Awaited<ReturnType<typeof trpc.lists.mine.query>>;
@@ -15,21 +14,24 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    trpc.lists.mine
-      .query()
-      .then(setLists)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Request failed'))
-      .finally(() => setLoading(false));
-  }, []);
+  // Refetch on focus so a newly created/edited/deleted list is reflected.
+  useFocusEffect(
+    useCallback(() => {
+      trpc.lists.mine
+        .query()
+        .then(setLists)
+        .catch((e) => setError(e instanceof Error ? e.message : 'Request failed'))
+        .finally(() => setLoading(false));
+    }, []),
+  );
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-bg">
       <View className="flex-1 gap-3 px-4 pt-4">
         <View className="flex-row items-center justify-between">
           <Text className="text-2xl font-bold text-ink">Saive</Text>
-          <Pressable onPress={() => authClient.signOut()}>
-            <Text className="text-muted">Sign out</Text>
+          <Pressable onPress={() => router.push('/lists/new')}>
+            <Text className="text-base font-semibold text-primary">+ New</Text>
           </Pressable>
         </View>
 

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import {
   Stack,
   useFocusEffect,
@@ -32,6 +32,21 @@ export default function ListScreen() {
     }, [id]),
   );
 
+  function confirmDeleteList() {
+    Alert.alert('Delete list?', 'This deletes the list and its bookmarks.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          if (!id) return;
+          await trpc.lists.delete.mutate({ listId: id });
+          router.back();
+        },
+      },
+    ]);
+  }
+
   return (
     <View className="flex-1 bg-bg px-4 pt-4">
       <Stack.Screen
@@ -60,7 +75,23 @@ export default function ListScreen() {
       <FlatList
         data={bookmarks}
         keyExtractor={(b) => b.id}
-        contentContainerStyle={{ gap: 8 }}
+        contentContainerStyle={{ gap: 8, paddingBottom: 24 }}
+        ListFooterComponent={
+          <View className="mt-6 gap-2">
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: '/lists/edit', params: { id } })
+              }
+              className="items-center rounded-lg border border-border py-3">
+              <Text className="text-ink">Edit list</Text>
+            </Pressable>
+            <Pressable
+              onPress={confirmDeleteList}
+              className="items-center rounded-lg border border-border py-3">
+              <Text className="font-semibold text-danger">Delete list</Text>
+            </Pressable>
+          </View>
+        }
         renderItem={({ item }) => (
           <Pressable
             onPress={() =>
