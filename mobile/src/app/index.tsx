@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { trpc } from '@/client/api';
+import { authClient } from '@/client/auth';
 
 // Inferred straight from web's tRPC procedure — no hand-written DTOs.
 type Memberships = Awaited<ReturnType<typeof trpc.lists.mine.query>>;
@@ -26,7 +27,12 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedText type="title">Saive</ThemedText>
+        <View style={styles.header}>
+          <ThemedText type="title">Saive</ThemedText>
+          <Pressable onPress={() => authClient.signOut()}>
+            <ThemedText type="small">Sign out</ThemedText>
+          </Pressable>
+        </View>
 
         {loading && <ThemedText type="small">Loading…</ThemedText>}
         {error && <ThemedText type="small">Not signed in — {error}</ThemedText>}
@@ -58,6 +64,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
     gap: Spacing.three,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   list: { alignSelf: 'stretch' },
   row: {
