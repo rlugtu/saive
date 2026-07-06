@@ -6,10 +6,12 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { trpc } from '@/client/api';
 import { useTheme } from '@/theme/theme-provider';
 import { THEME_TOKENS } from '@/theme/tokens';
-import PhotoCard from '@/components/photo-card';
+import { cardShadow } from '@/theme/shadows';
 
 // Inferred straight from web's tRPC procedure — no hand-written DTOs.
 type Memberships = Awaited<ReturnType<typeof trpc.lists.mine.query>>;
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -75,19 +77,23 @@ export default function HomeScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <PhotoCard
-            placeholderEmoji={item.list.icon}
+          <Pressable
             onPress={() =>
               router.push({
                 pathname: '/lists/[id]',
                 params: { id: item.list.id, name: item.list.name },
               })
-            }>
-            <Text className="font-serif text-xl text-ink">{item.list.name}</Text>
-            <Text className="font-sans text-sm text-muted">
-              {item.list._count.bookmarks} bookmarks
+            }
+            style={cardShadow}
+            className="rounded-skin border-skin border-border bg-panel p-4">
+            <Text className="font-serif text-xl text-ink">
+              {item.list.icon} {item.list.name}
             </Text>
-          </PhotoCard>
+            <Text className="mt-0.5 font-sans text-sm text-muted">
+              {plural(item.list._count.bookmarks, 'bookmark')} ·{' '}
+              {plural(item.list._count.memberships, 'member')}
+            </Text>
+          </Pressable>
         )}
       />
     </SafeAreaView>
