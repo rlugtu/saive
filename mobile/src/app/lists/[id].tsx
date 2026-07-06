@@ -80,6 +80,13 @@ export default function ListScreen() {
           <View className="mt-6 gap-2">
             <Pressable
               onPress={() =>
+                router.push({ pathname: '/lists/members', params: { id, name } })
+              }
+              className="items-center rounded-lg border border-border py-3">
+              <Text className="text-ink">Members &amp; sharing</Text>
+            </Pressable>
+            <Pressable
+              onPress={() =>
                 router.push({ pathname: '/lists/edit', params: { id } })
               }
               className="items-center rounded-lg border border-border py-3">
