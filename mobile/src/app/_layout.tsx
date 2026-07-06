@@ -3,13 +3,13 @@ import '@/global.css';
 import {
   DarkTheme,
   DefaultTheme,
+  Stack,
   ThemeProvider as NavThemeProvider,
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme, View } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
 import LoginScreen from '@/components/login-screen';
 import { authClient } from '@/client/auth';
 import { ThemeProvider as AppThemeProvider } from '@/theme/theme-provider';
@@ -25,10 +25,12 @@ export default function RootLayout() {
       <NavThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AnimatedSplashOverlay />
         {isPending ? (
-          // Splash overlay covers this brief gap while the session resolves.
           <View style={{ flex: 1 }} />
         ) : session ? (
-          <AppTabs />
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="lists/[id]" options={{ title: 'List' }} />
+          </Stack>
         ) : (
           <LoginScreen />
         )}
