@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import {
   Stack,
@@ -16,8 +16,31 @@ export default function ListScreen() {
   const router = useRouter();
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const [bookmarks, setBookmarks] = useState<Bookmarks>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Distinct tags present across the list's bookmarks (for the filter chips).
+  const availableTags = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; color: string }>();
+    for (const b of bookmarks) for (const bt of b.tags) map.set(bt.tag.id, bt.tag);
+    return [...map.values()];
+  }, [bookmarks]);
+
+  // OR filter — a bookmark shows if it has any selected tag.
+  const shown = useMemo(() => {
+    if (selected.size === 0) return bookmarks;
+    return bookmarks.filter((b) => b.tags.some((bt) => selected.has(bt.tag.id)));
+  }, [bookmarks, selected]);
+
+  function toggleTag(tagId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(tagId)) next.delete(tagId);
+      else next.add(tagId);
+      return next;
+    });
+  }
 
   // Refetch on focus so a newly-created bookmark shows on return.
   useFocusEffect(
@@ -72,8 +95,28 @@ export default function ListScreen() {
         <Text className="text-muted">No bookmarks yet.</Text>
       )}
 
+      {availableTags.length > 0 && (
+        <View className="mb-2 flex-row flex-wrap gap-1">
+          {availableTags.map((t) => {
+            const on = selected.has(t.id);
+            return (
+              <Pressable
+                key={t.id}
+                onPress={() => toggleTag(t.id)}
+                style={{ backgroundColor: t.color, opacity: !on && selected.size > 0 ? 0.4 : 1 }}
+                className="rounded-full px-3 py-1">
+                <Text className="text-xs text-ink">
+                  {on ? '✓ ' : ''}
+                  {t.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
       <FlatList
-        data={bookmarks}
+        data={shown}
         keyExtractor={(b) => b.id}
         contentContainerStyle={{ gap: 8, paddingBottom: 24 }}
         ListFooterComponent={
