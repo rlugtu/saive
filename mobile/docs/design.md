@@ -1,5 +1,9 @@
 # Saive — Journal Theme (design doc)
 
+> The Journal theme is **shipped and is the default** family (light + dark), alongside Pixel and
+> Modern. This doc is the visual-design reference for it; for app structure, navigation, and the
+> full feature set see `ARCHITECTURE.md`.
+
 ## Mockups
 
 | | |
@@ -10,18 +14,19 @@
 | ![Bookmark detail light](mockups/06-bookmark-detail-light.png) Bookmark detail — light | ![Bookmark detail dark](mockups/07-bookmark-detail-dark.png) Bookmark detail — dark |
 
 
-A new warm, personal "scrapbook" theme for the mobile app (Expo + NativeWind), added
-alongside the existing Pixel and Modern themes — same token architecture
-(`THEME_TOKENS`, `tailwind.config.js` skin vars), new palette + type + component
-treatment. Ships light + dark.
+A warm, personal "scrapbook" theme for the mobile app (Expo + NativeWind), alongside
+the Pixel and Modern themes — same token architecture (`THEME_TOKENS`, skin vars),
+its own palette + type + component treatment. Ships light + dark, and is the default.
 
 ## Screens covered
 
-- **Home** (`/`) — lists you own or belong to, search — *priority*
-- **List detail** (`/lists/[id]`) — bookmarks in a list, tag filter, comments — *priority*
-- **Bookmark detail** (`/lists/[id]/bookmarks/[bid]`) — hero photos, rating, tags, notes, comments — *priority*
-- **Nearby** (`/nearby`) — compact rows, distance, radius chips — spec only, reuse primitives
-- **New bookmark, Settings, Onboarding, Login, Invite** — spec only, reuse primitives
+- **Home / Lists** (`(tabs)/index.tsx`) — lists you own or belong to, search, ＋ List / ＋ Bookmark
+- **List detail** (`lists/[id].tsx`) — bookmarks in a list, name search + tag-filter bottom sheet, comments
+- **Bookmark detail** (`bookmarks/[id].tsx`) — hero photos, rating, tags, notes, location, comments
+- **New / edit bookmark** (`bookmarks/new.tsx`, `bookmarks/edit.tsx`) — shared `BookmarkForm`:
+  link autofill, location search, and (standalone flow) the multi-list picker
+- **Nearby** (`(tabs)/nearby.tsx`) — compact rows, distance, radius chips
+- **Settings** (`(tabs)/settings.tsx`) — account, theme picker, sign out · **Login**, **Members**
 
 ## Color tokens — `JOURNAL_LIGHT` / `JOURNAL_DARK`
 
@@ -71,24 +76,31 @@ per-tag colors (`tag-colors.ts`) carry over unchanged.
 - **Primary button** — filled `primary` terracotta, radius-sm, `primaryInk` label,
   Work Sans 600.
 
-## List detail — tag filter redesign
+## List detail — search + tag filter
 
-Tag chips move out of the scrolling content into the screen header, next to the
-list title: a small **"Tags ▾"** button opens a bottom sheet with a checkable list
-of every tag used in this list (multi-select, OR filter — unchanged logic). The
-header stays put on scroll. Selected tags render as a pills row (with ✕ per pill +
-Clear all) directly under the header — that row is only present once ≥1 tag is
-selected; with nothing selected it collapses away entirely, so an unfiltered list
-shows no reserved empty space. No count badge on the header button.
+A **filter row** sits **on the page**, in the `FlatList` header content directly below
+the Edit list / Members action row (clear of the **Add** button in the screen header —
+the tag trigger and Add were previously adjacent in `headerRight` and hard to tell
+apart). The row is a left-justified **search box** that fills the remaining width, with
+a **"Tags ▾"** button on its right. Typing filters the feed by bookmark name
+(case-insensitive substring); the button opens a bottom sheet with a checkable list of
+every tag used in this list (multi-select, OR filter). The two filters combine with
+**AND**. When the list has no tags the button is hidden and the search box spans the
+full width. No count badge on the button.
 
-**Implementation:** in `mobile/src/app/lists/[id].tsx`, move the `availableTags` row
-out of the scrolling `FlatList` content into `Stack.Screen`'s `headerRight` as a
-"Tags ▾" button; its `onPress` opens a bottom sheet (e.g. `@gorhom/bottom-sheet`,
-already idiomatic in Expo) rendering the same toggle-list interaction, keyed off the
-existing `selected` Set / `toggleTag` logic — no filtering logic changes, only where
-the picker UI lives. Render the pills row (existing ✕/Clear all pattern)
-conditionally — only when `selected.size > 0` — directly below the header instead of
-always-visible above the list.
+Selected tags render as a pills row (✕ per pill) directly under the row, followed by a
+**Clear all** control that appears whenever a tag is selected **or** the search box has
+text and resets **both**. With nothing active the row collapses away entirely, so an
+unfiltered list shows no reserved empty space.
+
+**Implementation:** in `mobile/src/app/lists/[id].tsx`, `Stack.Screen`'s `headerRight`
+holds only **Add**. In the `ListHeaderComponent`, a `flex-row` holds the `query`-backed
+`TextInput` (`flex-1`) and the `availableTags`-gated "Tags ▾" `Pressable`. The
+`shown` `useMemo` AND-combines the name substring with the existing `selected` Set /
+`toggleTag` OR logic. The bottom sheet (`@gorhom/bottom-sheet`, idiomatic in Expo)
+renders the same toggle-list, and the pills / Clear-all block renders when
+`selected.size > 0 || query.trim() !== ''`; Clear all runs `setSelected(new Set())` +
+`setQuery('')`.
 
 ## NativeWind implementation notes
 
@@ -109,11 +121,11 @@ always-visible above the list.
   (existing field, currently only shown on detail) — this is the single biggest
   visual lift for the new theme.
 
-## Open questions
+## Resolved decisions
 
-- Should Journal become the new *default* theme, or sit alongside Pixel/Modern as a
-  third pick in settings?
-- Bookmarks without a photo yet — solid warm placeholder tile (as mocked) or fall
-  back to compact row even in list view?
-- OK to bundle a new Google/expo font (Newsreader) or should headings stay on a
-  system serif for load-time reasons?
+- **Default theme** — Journal is the default family (following system light/dark until the user
+  picks another in Settings); Pixel and Modern remain available.
+- **Photo-less bookmarks** — `PhotoCard` renders a solid warm placeholder tile (not a compact-row
+  fallback) in list view.
+- **Fonts** — Newsreader (serif) and Work Sans (sans) are bundled via `@expo-google-fonts/*` and
+  loaded (`expo-font`) before the splash hides.

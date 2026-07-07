@@ -49,11 +49,18 @@ export default function HomeScreen() {
           <View className="gap-3 pb-1">
             <View className="flex-row items-center justify-between">
               <Text className="font-serif text-3xl text-ink">Saive</Text>
-              <Pressable onPress={() => router.push('/lists/new')}>
-                <Text className="font-sans-semibold text-base text-primary">
-                  + New
-                </Text>
-              </Pressable>
+              <View className="flex-row items-center gap-4">
+                <Pressable onPress={() => router.push('/lists/new')}>
+                  <Text className="font-sans-semibold text-base text-primary">
+                    + List
+                  </Text>
+                </Pressable>
+                <Pressable onPress={() => router.push('/bookmarks/new')}>
+                  <Text className="font-sans-semibold text-base text-primary">
+                    + Bookmark
+                  </Text>
+                </Pressable>
+              </View>
             </View>
 
             <TextInput

@@ -17,8 +17,10 @@ import {
 } from 'expo-router';
 
 import { trpc } from '@/client/api';
+import BookmarkVideo from '@/components/bookmark-video';
 import CommentsSection, { type CommentItem } from '@/components/comments-section';
 import TagPill from '@/components/tag-pill';
+import { screenshotThumbUrl, videoPosterUrl } from '@/lib/video-embed';
 import { cardShadow } from '@/theme/shadows';
 
 // Inferred from web's tRPC procedure ({ bookmark, role } | null).
@@ -109,37 +111,51 @@ export default function BookmarkScreen() {
 
       {b && (
         <>
-          {b.images.length > 0 && (
-            <View
-              style={cardShadow}
-              className="overflow-hidden rounded-skin border-skin border-border bg-panel p-1.5">
-              <View className="overflow-hidden rounded-skin-sm">
-                <Image
-                  source={b.images[0]}
-                  style={{ width: '100%', aspectRatio: 1.6 }}
-                  contentFit="cover"
-                  transition={150}
-                />
+          {b.videoUrl ? (
+            // A playable video replaces the header image; images[0] is its poster.
+            <BookmarkVideo
+              videoUrl={b.videoUrl}
+              videoType={b.videoType}
+              poster={
+                b.images[0] ??
+                videoPosterUrl(b.videoUrl, b.videoType) ??
+                screenshotThumbUrl(b.urls[0]) ??
+                undefined
+              }
+            />
+          ) : (
+            b.images.length > 0 && (
+              <View
+                style={cardShadow}
+                className="overflow-hidden rounded-skin border-skin border-border bg-panel p-1.5">
+                <View className="overflow-hidden rounded-skin-sm">
+                  <Image
+                    source={b.images[0]}
+                    style={{ width: '100%', aspectRatio: 1.6 }}
+                    contentFit="cover"
+                    transition={150}
+                  />
+                </View>
+                {b.images.length > 1 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    className="mt-1.5">
+                    <View className="flex-row gap-1.5">
+                      {b.images.slice(1).map((src) => (
+                        <View key={src} className="overflow-hidden rounded-skin-sm">
+                          <Image
+                            source={src}
+                            style={{ width: 84, height: 60 }}
+                            contentFit="cover"
+                          />
+                        </View>
+                      ))}
+                    </View>
+                  </ScrollView>
+                )}
               </View>
-              {b.images.length > 1 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  className="mt-1.5">
-                  <View className="flex-row gap-1.5">
-                    {b.images.slice(1).map((src) => (
-                      <View key={src} className="overflow-hidden rounded-skin-sm">
-                        <Image
-                          source={src}
-                          style={{ width: 84, height: 60 }}
-                          contentFit="cover"
-                        />
-                      </View>
-                    ))}
-                  </View>
-                </ScrollView>
-              )}
-            </View>
+            )
           )}
 
           <Text className="font-serif text-3xl text-ink">{b.name}</Text>

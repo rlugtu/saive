@@ -11,11 +11,16 @@ type NearbyItem = Extract<NearbyResult, { ok: true }>['data'][number];
 
 const RANGES = [1, 5, 10, 25];
 
+/** Fallback readout of a coordinate pair when reverse-geocoding is unavailable. */
+const formatCoords = (lat: number, lon: number) =>
+  `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
+
 export default function NearbyScreen() {
   const router = useRouter();
   const [radius, setRadius] = useState(5);
   const [items, setItems] = useState<NearbyItem[]>([]);
   const [skipped, setSkipped] = useState(0);
+  const [locationLabel, setLocationLabel] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(
     'Pick a radius to search near you.',
   );
@@ -25,6 +30,8 @@ export default function NearbyScreen() {
     setRadius(r);
     setBusy(true);
     setStatus(null);
+    setItems([]);
+    setLocationLabel(null);
     try {
       const { status: perm } = await Location.requestForegroundPermissionsAsync();
       if (perm !== 'granted') {
@@ -33,12 +40,13 @@ export default function NearbyScreen() {
         return;
       }
       const loc = await Location.getCurrentPositionAsync({});
-      const res = await trpc.nearby.find.query({
-        lat: loc.coords.latitude,
-        lon: loc.coords.longitude,
-        radiusMiles: r,
-        listIds: [],
-      });
+      const { latitude: lat, longitude: lon } = loc.coords;
+      // Resolve a readable address alongside the search so it adds no serial latency.
+      const [res, place] = await Promise.all([
+        trpc.nearby.find.query({ lat, lon, radiusMiles: r, listIds: [] }),
+        trpc.places.reverseGeocode.query({ lat, lon }),
+      ]);
+      setLocationLabel(place.ok ? place.data.address : formatCoords(lat, lon));
       if (res.ok) {
         setItems(res.data);
         setSkipped(res.skipped);
@@ -73,6 +81,17 @@ export default function NearbyScreen() {
         </View>
 
         {busy && <ActivityIndicator />}
+
+        {locationLabel && (
+          <View className="flex-row items-start gap-2 rounded-skin border-skin border-border bg-panel px-3 py-2.5">
+            <Text className="text-lg leading-none">📍</Text>
+            <View className="flex-1">
+              <Text className="text-xs font-semibold text-muted">Your location</Text>
+              <Text className="text-sm text-ink">{locationLabel}</Text>
+            </View>
+          </View>
+        )}
+
         {status && <Text className="text-muted">{status}</Text>}
         {skipped > 0 && (
           <Text className="text-xs text-muted">

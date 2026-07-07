@@ -18,7 +18,14 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.anonymous.saive"
     },
     "web": {
       "output": "static",
@@ -40,7 +47,20 @@
         {
           "locationWhenInUsePermission": "Saive uses your location to find bookmarks near you."
         }
-      ]
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1
+          },
+          "androidIntentFilters": [
+            "text/*"
+          ],
+          "iosAppGroupIdentifier": "group.com.anonymous.saive"
+        }
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import {
   Stack,
   useFocusEffect,
@@ -7,11 +7,13 @@ import {
   useRouter,
 } from 'expo-router';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import { Ionicons } from '@expo/vector-icons';
 
 import { trpc } from '@/client/api';
 import CommentsSection, { type CommentItem } from '@/components/comments-section';
 import PhotoCard from '@/components/photo-card';
 import TagPill from '@/components/tag-pill';
+import { screenshotThumbUrl, videoPosterUrl } from '@/lib/video-embed';
 import { useTheme } from '@/theme/theme-provider';
 import { THEME_TOKENS } from '@/theme/tokens';
 
@@ -27,6 +29,7 @@ export default function ListScreen() {
   const [bookmarks, setBookmarks] = useState<Bookmarks>([]);
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,11 +45,15 @@ export default function ListScreen() {
     return [...map.values()];
   }, [bookmarks]);
 
-  // OR filter — a bookmark shows if it has any selected tag.
+  // Name search (substring) AND tag filter (OR across selected tags).
   const shown = useMemo(() => {
-    if (selected.size === 0) return bookmarks;
-    return bookmarks.filter((b) => b.tags.some((bt) => selected.has(bt.tag.id)));
-  }, [bookmarks, selected]);
+    const q = query.trim().toLowerCase();
+    return bookmarks.filter(
+      (b) =>
+        (q === '' || b.name.toLowerCase().includes(q)) &&
+        (selected.size === 0 || b.tags.some((bt) => selected.has(bt.tag.id))),
+    );
+  }, [bookmarks, selected, query]);
 
   function toggleTag(tagId: string) {
     setSelected((prev) => {
@@ -78,24 +85,16 @@ export default function ListScreen() {
         options={{
           title: name ?? 'List',
           headerRight: () => (
-            <View className="flex-row items-center gap-4">
-              {availableTags.length > 0 && (
-                <Pressable onPress={() => sheetRef.current?.present()}>
-                  <Text className="font-sans-semibold text-base text-primary">
-                    Tags ▾
-                  </Text>
-                </Pressable>
-              )}
-              <Pressable
-                onPress={() =>
-                  router.push({
-                    pathname: '/bookmarks/new',
-                    params: { listId: id, listName: name },
-                  })
-                }>
-                <Text className="font-sans-semibold text-base text-primary">Add</Text>
-              </Pressable>
-            </View>
+            <Pressable
+              accessibilityLabel="Add bookmark"
+              onPress={() =>
+                router.push({
+                  pathname: '/bookmarks/new',
+                  params: { listId: id, listName: name },
+                })
+              }>
+              <Ionicons name="add" size={28} color={t.primary} />
+            </Pressable>
           ),
         }}
       />
@@ -121,7 +120,26 @@ export default function ListScreen() {
               </Pressable>
             </View>
 
-            {selectedTags.length > 0 && (
+            <View className="flex-row items-center gap-2">
+              <TextInput
+                className="flex-1 rounded-skin border-skin border-border px-4 py-2.5 font-sans text-ink"
+                placeholder="Search bookmarks"
+                placeholderTextColor={t.muted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={query}
+                onChangeText={setQuery}
+              />
+              {availableTags.length > 0 && (
+                <Pressable
+                  onPress={() => sheetRef.current?.present()}
+                  className="rounded-skin border-skin border-border px-3 py-2.5">
+                  <Text className="font-sans-semibold text-ink">Tags ▾</Text>
+                </Pressable>
+              )}
+            </View>
+
+            {(selectedTags.length > 0 || query.trim() !== '') && (
               <View className="flex-row flex-wrap items-center gap-1">
                 {selectedTags.map((tag) => (
                   <Pressable
@@ -134,7 +152,12 @@ export default function ListScreen() {
                     </Text>
                   </Pressable>
                 ))}
-                <Pressable onPress={() => setSelected(new Set())} className="px-1">
+                <Pressable
+                  onPress={() => {
+                    setSelected(new Set());
+                    setQuery('');
+                  }}
+                  className="px-1">
                   <Text className="font-sans text-xs text-muted">Clear all</Text>
                 </Pressable>
               </View>
@@ -167,7 +190,14 @@ export default function ListScreen() {
         }
         renderItem={({ item }) => (
           <PhotoCard
+            // Never the video itself — always a static thumbnail. If the
+            // extracted image is missing or fails (e.g. a hotlink-blocked reel
+            // og:image), fall back to a YouTube poster or a page screenshot.
             image={item.images[0] ?? null}
+            fallbackImage={
+              videoPosterUrl(item.videoUrl, item.videoType) ??
+              screenshotThumbUrl(item.urls[0])
+            }
             onPress={() =>
               router.push({
                 pathname: '/bookmarks/[id]',

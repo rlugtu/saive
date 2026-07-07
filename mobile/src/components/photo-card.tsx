@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -7,6 +7,9 @@ import { cardShadow } from '@/theme/shadows';
 type Props = {
   /** First extracted image URL; a warm placeholder tile is shown when absent. */
   image?: string | null;
+  /** Shown if `image` is absent or fails to load (e.g. a hotlink-blocked reel
+   * thumbnail) — typically a derived video poster or page screenshot. */
+  fallbackImage?: string | null;
   placeholderEmoji?: string;
   onPress?: () => void;
   /** Content rendered below the photo (title, meta, tags…). */
@@ -20,10 +23,18 @@ type Props = {
  */
 export default function PhotoCard({
   image,
+  fallbackImage,
   placeholderEmoji = '🔖',
   onPress,
   children,
 }: Props) {
+  // Walk candidates on load error: image → fallbackImage → placeholder. Reset
+  // when the inputs change, since FlatList recycles card instances.
+  const candidates = [image, fallbackImage].filter(Boolean) as string[];
+  const [stage, setStage] = useState(0);
+  useEffect(() => setStage(0), [image, fallbackImage]);
+  const src = candidates[stage] ?? null;
+
   return (
     <Pressable
       onPress={onPress}
@@ -32,12 +43,13 @@ export default function PhotoCard({
       {/* p-1.5 leaves a panel-colored "print border" around the photo */}
       <View className="p-1.5">
         <View className="overflow-hidden rounded-skin-sm">
-          {image ? (
+          {src ? (
             <Image
-              source={image}
+              source={src}
               style={{ width: '100%', aspectRatio: 1.6 }}
               contentFit="cover"
               transition={150}
+              onError={() => setStage((s) => s + 1)}
             />
           ) : (
             <View

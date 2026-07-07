@@ -1,7 +1,11 @@
 import '@/global.css';
 
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import {
+  ShareIntentProvider,
+  useShareIntentContext,
+} from 'expo-share-intent';
 import {
   DarkTheme,
   DefaultTheme,
@@ -23,14 +27,34 @@ import {
 } from '@expo-google-fonts/work-sans';
 
 import LoginScreen from '@/components/login-screen';
+import OnboardingScreen from '@/components/onboarding-screen';
 import { authClient } from '@/client/auth';
 import { ThemeProvider as AppThemeProvider } from '@/theme/theme-provider';
 
 SplashScreen.preventAutoHideAsync();
 
+/**
+ * Routes an incoming share intent (a URL shared into Saive from another app) to the
+ * standalone new-bookmark flow, prefilled with the shared URL. Rendered only inside the
+ * authenticated subtree, so a share received while logged out waits until after login.
+ */
+function ShareIntentRouter() {
+  const router = useRouter();
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
+
+  useEffect(() => {
+    if (!hasShareIntent) return;
+    const url = shareIntent.webUrl ?? shareIntent.text ?? undefined;
+    if (url) router.push({ pathname: '/bookmarks/new', params: { url } });
+    resetShareIntent();
+  }, [hasShareIntent, shareIntent, router, resetShareIntent]);
+
+  return null;
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending, refetch } = authClient.useSession();
   const [fontsLoaded] = useFonts({
     Newsreader_600SemiBold,
     Newsreader_500Medium_Italic,
@@ -47,13 +71,23 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <ShareIntentProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <AppThemeProvider>
         <NavThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <BottomSheetModalProvider>
             {isPending ? (
               <View style={{ flex: 1 }} />
-            ) : session ? (
+            ) : !session ? (
+              <LoginScreen />
+            ) : !session.user.displayName ? (
+              // Signed in but no profile yet — mirror web's onboarding gate.
+              <OnboardingScreen
+                defaultName={session.user.name}
+                onDone={() => refetch()}
+              />
+            ) : (
+              <>
               <Stack
                 screenOptions={{
                   headerTitleStyle: { fontFamily: 'Newsreader_600SemiBold' },
@@ -79,12 +113,13 @@ export default function RootLayout() {
                   options={{ presentation: 'modal', title: 'Edit bookmark' }}
                 />
               </Stack>
-            ) : (
-              <LoginScreen />
+              <ShareIntentRouter />
+              </>
             )}
           </BottomSheetModalProvider>
         </NavThemeProvider>
       </AppThemeProvider>
     </GestureHandlerRootView>
+    </ShareIntentProvider>
   );
 }
