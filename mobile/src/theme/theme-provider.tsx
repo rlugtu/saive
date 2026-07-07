@@ -33,7 +33,7 @@ export function useTheme() {
 /**
  * Applies a Saive theme's tokens as CSS variables (via NativeWind `vars()`) to a
  * root wrapper, so `bg-bg` / `text-ink` / `bg-primary` resolve to the active
- * palette. Reproduces web's `data-theme` var-swap. Defaults to the pixel theme
+ * palette. Reproduces web's `data-theme` var-swap. Defaults to the Modern theme
  * following system light/dark; an explicit choice is persisted to secure-store so
  * it survives restarts.
  */
@@ -53,7 +53,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     SecureStore.setItemAsync(STORE_KEY, t).catch(() => {});
   }, []);
 
-  const theme = override ?? (scheme === 'dark' ? 'JOURNAL_DARK' : 'JOURNAL_LIGHT');
+  const theme = override ?? (scheme === 'dark' ? 'MODERN_DARK' : 'MODERN_LIGHT');
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

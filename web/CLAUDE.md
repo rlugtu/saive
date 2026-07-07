@@ -41,9 +41,11 @@ Run these from `web/` (the app no longer lives at the repo root).
   access); `List.ownerId` is the canonical owner.
 - **Styling / themes**: design tokens are CSS vars in `src/app/globals.css` (`@theme inline`),
   swapped per theme via `data-theme` on `<html>` (from `user.theme`). Themes = `Theme` enum
-  `PIXEL_LIGHT|PIXEL_DARK|MODERN_LIGHT|MODERN_DARK`; registry + enum↔`data-theme` map + validation
-  in `src/lib/theme.ts`. The `.pixel-*` primitives are the retro skin; **unlayered**
-  `[data-theme^="modern"]` CSS overrides them for the modern skin (adding a theme is pure CSS).
+  `PIXEL_LIGHT|PIXEL_DARK|MODERN_LIGHT|MODERN_DARK|JOURNAL_LIGHT|JOURNAL_DARK` (**default
+  `MODERN_LIGHT`**); registry + enum↔`data-theme` map + validation in `src/lib/theme.ts`. The
+  `.pixel-*` primitives are the retro skin; **unlayered** `[data-theme^="modern"]` /
+  `[data-theme^="journal"]` CSS overrides them for the modern/journal skins (adding a theme is pure
+  CSS — journal also adds Newsreader + Work Sans fonts in `layout.tsx`).
 
 ## Gotchas
 - **Prisma 7**: `migrate dev` does NOT reliably regenerate the client — run `npx prisma generate`

@@ -23,7 +23,7 @@ mobile-specific implementation only.
 **Mobile design source of truth: `docs/design.md`** (the "Journal" redesign + mockups). Theming lives
 in `src/theme/` — `tokens.ts` (`THEME_TOKENS`, per-family skin) + `theme-provider.tsx` (applies a
 theme's tokens as CSS vars via NativeWind `vars()`; persisted to secure-store). **Six themes across
-three families** — **Journal** (warm scrapbook; the default), Pixel, Modern — each light + dark;
+three families** — **Modern** (the default), **Journal** (warm scrapbook), Pixel — each light + dark;
 only palette/skin/font differ, the screen *structure* is shared. Style with the semantic classes
 (`bg-bg`/`text-ink`/`bg-primary`/`border-skin`/`rounded-skin`) + fonts (`font-serif` = Newsreader,
 `font-sans[-medium|-semibold]` = Work Sans). Photo-forward cards use `components/photo-card.tsx` +

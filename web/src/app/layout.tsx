@@ -1,5 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Press_Start_2P, VT323, Inter } from "next/font/google";
+import {
+  Press_Start_2P,
+  VT323,
+  Inter,
+  Newsreader,
+  Work_Sans,
+} from "next/font/google";
 import { getSession } from "@/lib/session";
 import { themeDataAttr } from "@/lib/theme";
 import { PWARegister } from "@/components/PWARegister";
@@ -22,6 +28,21 @@ const vt323 = VT323({
 // Clean sans for the modern theme.
 const inter = Inter({
   variable: "--font-sans",
+  subsets: ["latin"],
+});
+
+// Journal theme fonts (ported from mobile): Newsreader serif titles (incl. the
+// italic weight used for headings) + Work Sans body.
+const newsreader = Newsreader({
+  weight: ["500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-serif",
+  subsets: ["latin"],
+});
+
+const workSans = Work_Sans({
+  weight: ["400", "500", "600"],
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
@@ -50,14 +71,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getSession();
-  // Authed users get their saved theme; the login screen defaults to pixel dark.
-  const theme = session ? themeDataAttr(session.user.theme) : "pixel-dark";
+  // Authed users get their saved theme; the login screen defaults to modern light.
+  const theme = session ? themeDataAttr(session.user.theme) : "modern-light";
 
   return (
     <html
       lang="en"
       data-theme={theme}
-      className={`${pressStart.variable} ${vt323.variable} ${inter.variable} h-full antialiased`}
+      className={`${pressStart.variable} ${vt323.variable} ${inter.variable} ${newsreader.variable} ${workSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}

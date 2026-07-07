@@ -26,6 +26,8 @@ enum Theme {
   PIXEL_DARK
   MODERN_LIGHT
   MODERN_DARK
+  JOURNAL_LIGHT
+  JOURNAL_DARK
 }
 
 // Core user. Fields `name`, `email`, `emailVerified`, `image` are the better-auth
@@ -41,7 +43,7 @@ model User {
   displayName   String?
   birthday      DateTime?
   icon          String? // emoji
-  theme         Theme     @default(PIXEL_LIGHT)
+  theme         Theme     @default(MODERN_LIGHT)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

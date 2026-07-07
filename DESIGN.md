@@ -36,12 +36,15 @@ For a benefit-first, marketing-oriented summary of the app and its headline feat
 | Database | Supabase (Postgres) |
 | ORM | Prisma |
 
-**Aesthetic:** two theme families, each with a light + dark variant, stored per-user (the
-`Theme` enum: `PIXEL_LIGHT` / `PIXEL_DARK` / `MODERN_LIGHT` / `MODERN_DARK`):
+**Aesthetic:** three theme families, each with a light + dark variant, stored per-user (the
+`Theme` enum: `PIXEL_LIGHT` / `PIXEL_DARK` / `MODERN_LIGHT` / `MODERN_DARK` /
+`JOURNAL_LIGHT` / `JOURNAL_DARK`; **`MODERN_LIGHT` is the default**):
 - **Pixel** (the original) — retro 8-bit: pixel fonts ("Press Start 2P" / VT323), chunky
   borders, hard offset drop-shadows.
-- **Modern** — sleek/minimalist: clean sans (Inter), thin/rounded borders, soft shadows,
-  monochrome palette with pastel gradients.
+- **Modern** (the default) — sleek/minimalist: clean sans (Inter), thin/rounded borders, soft
+  shadows, monochrome palette with pastel gradients.
+- **Journal** — warm "scrapbook": serif titles (Newsreader) + sans body (Work Sans), soft
+  rounded cards, warm beige/brown palette, solid (non-gradient) primary buttons.
 
 Themes are swapped via a `data-theme` attribute on `<html>`; see §8 for how the modern skin
 reuses the same components/tokens without any layout change.
@@ -231,6 +234,12 @@ Pause for review after **each** step.
   `modern-light`/`modern-dark`); central registry `src/lib/theme.ts` (`THEME_OPTIONS`,
   `themeDataAttr`, `coerceTheme`); modern skin is unlayered `[data-theme^="modern"]` CSS overriding
   the `.pixel-*` primitives (no layout changes). 4-option picker in settings/onboarding.
+- **Journal theme + Modern-Light default**: ported mobile's warm "scrapbook" Journal theme to web
+  (`JOURNAL_LIGHT|JOURNAL_DARK`, data-theme `journal-light`/`journal-dark`) — serif titles
+  (Newsreader) + Work Sans body, soft rounded cards, solid primary buttons; same unlayered
+  `[data-theme^="journal"]` skin pattern. Made **`MODERN_LIGHT` the default** for both apps (web:
+  Prisma `@default`, better-auth `defaultValue`, unauthenticated/login screen, `theme.ts`
+  fallbacks; mobile: system-aware Modern in `theme-provider.tsx`). Picker now shows 6 options.
 - **Near me** (`/nearby`): find geocoded bookmarks within a chosen radius of the browser's current
   location. RSC shell + client island (`NearbyFinder`) for geolocation; a server action
   (`findNearbyBookmarks` in `src/lib/actions/nearby.ts`) haversine-filters (`src/lib/geo.ts`) the

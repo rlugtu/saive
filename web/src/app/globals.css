@@ -76,6 +76,45 @@
   --gradient-primary: linear-gradient(135deg, #7c83ff, #a78bfa);
 }
 
+/* ------------------------------------------------------------------ *
+ * Journal theme — warm "scrapbook" palette (ported from mobile).
+ * Serif titles + soft, rounded cards; primary buttons stay solid
+ * (no gradient). The journal skin overrides (borders/shadows/radius/
+ * fonts) live in the unlayered block at the bottom of this file.
+ * ------------------------------------------------------------------ */
+[data-theme="journal-light"] {
+  --bg: #f6efe4;
+  --panel: #fffaf0;
+  --ink: #2e2620;
+  --muted: #8a7c6c;
+  --primary: #b5502f;
+  --primary-ink: #fff8f0;
+  --accent: #c98a2c;
+  --danger: #b23b3b;
+  --success: #4f7a4a;
+  --warning: #c98a2c;
+  --border: #ded0ba;
+  --shadow: rgba(80, 60, 40, 0.15);
+  /* Journal has no app gradient on mobile — solid warm background. */
+  --gradient-app: var(--bg);
+}
+
+[data-theme="journal-dark"] {
+  --bg: #1c1712;
+  --panel: #26201a;
+  --ink: #f2e9dc;
+  --muted: #a89787;
+  --primary: #e08a5f;
+  --primary-ink: #1c1712;
+  --accent: #e0b25a;
+  --danger: #e07a6b;
+  --success: #7fae70;
+  --warning: #e0b25a;
+  --border: #3a3128;
+  --shadow: rgba(0, 0, 0, 0.5);
+  --gradient-app: var(--bg);
+}
+
 /* Expose tokens as Tailwind utilities (bg-bg, text-ink, border-border, ...).
    `inline` keeps them as live var() refs so theme switching works at runtime. */
 @theme inline {
@@ -216,5 +255,64 @@ img[data-pixel] {
 [data-theme^="modern"] .pixel-tag {
   text-transform: none;
   border-radius: 9999px;
+  border-width: 1px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Journal skin — unlayered so it overrides Tailwind's @layer utilities
+ * and the .pixel-* component layer. Warm scrapbook look ported from
+ * mobile: serif (Newsreader) titles, Work Sans body, thin soft borders,
+ * generously rounded corners (20px / 12px), soft warm shadows, and a
+ * solid warm background (no texture, no gradient). Primary buttons keep
+ * the base solid color. No layout/spacing/size changes.
+ * ------------------------------------------------------------------ */
+[data-theme^="journal"] body {
+  font-family: var(--font-body), system-ui, sans-serif;
+  /* replace the retro dotted texture with a solid warm background */
+  background-image: none;
+  background-color: var(--bg);
+}
+
+[data-theme^="journal"] h1,
+[data-theme^="journal"] h2,
+[data-theme^="journal"] h3,
+[data-theme^="journal"] h4,
+[data-theme^="journal"] h5,
+[data-theme^="journal"] h6,
+[data-theme^="journal"] .font-pixel {
+  font-family: var(--font-serif), Georgia, serif;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+[data-theme^="journal"] .pixel-box {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+[data-theme^="journal"] .pixel-box-sm {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 3px 12px var(--shadow);
+}
+
+[data-theme^="journal"] .pixel-press {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+[data-theme^="journal"] .pixel-press:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px var(--shadow);
+}
+[data-theme^="journal"] .pixel-press:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 12px var(--shadow);
+}
+
+/* Soften bookmark tags into rounded, non-uppercase pills (journal uses the
+   smaller 12px radius from its skin, matching mobile's tag pills). */
+[data-theme^="journal"] .pixel-tag {
+  text-transform: none;
+  border-radius: 12px;
   border-width: 1px;
 }
