@@ -61,8 +61,9 @@ export const metadata: Metadata = {
   },
 };
 
+// Matches the modern-light background (the default theme + login screen).
 export const viewport: Viewport = {
-  themeColor: "#14142b",
+  themeColor: "#f7f7fb",
 };
 
 export default async function RootLayout({
