@@ -170,6 +170,10 @@ helper — never rely on UI gating alone.
 | `/bookmarks/new` | **New bookmark**: standalone create flow; pick/create one or more target lists and add the bookmark independently to each |
 | `/lists/[id]` | Bookmarks in a list; filter/search within; list-level comments; invite UI (owner) |
 | `/lists/[id]/bookmarks/[bid]` | Bookmark detail: 8-bit layout, tag pills, comments newest-first; **← Back** returns to the previous page (list / nearby / search), falling back to the list on direct load |
+| `/lists/[id]/polls` | Polls in a list (newest first, with status + counts); **New poll** for collaborators+ |
+| `/lists/[id]/polls/new` | Create a poll: fields + a searchable/tag-filterable bookmark option picker (≥2) |
+| `/lists/[id]/polls/[pollId]` | Poll detail: **Vote**/**Results** toggle; edit/delete for the creator or list owner |
+| `/lists/[id]/polls/[pollId]/edit` | Edit a poll (creator or list owner); reconciles options |
 | `/settings` | Edit profile/theme/icon; manage/leave shared lists; pending invites |
 | `/invite/[token]` | Accept an invite |
 
