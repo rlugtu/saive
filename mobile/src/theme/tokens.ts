@@ -73,6 +73,33 @@ function skinFor(name: ThemeName) {
 }
 
 /**
+ * Per-family fonts. Values are loaded font-family names (see _layout.tsx `useFonts`);
+ * RN doesn't synthesize weights, so each weight is its own family. Modern uses Geist
+ * (sleek all-sans — titles + body); Journal/Pixel keep Newsreader titles + Work Sans.
+ */
+const FONTS = {
+  MODERN: {
+    title: 'Geist_600SemiBold',
+    titleItalic: 'Geist_500Medium_Italic',
+    body: 'Geist_400Regular',
+    bodyMedium: 'Geist_500Medium',
+    bodySemibold: 'Geist_600SemiBold',
+  },
+  // Journal + Pixel share the original type system.
+  DEFAULT: {
+    title: 'Newsreader_600SemiBold',
+    titleItalic: 'Newsreader_500Medium_Italic',
+    body: 'WorkSans_400Regular',
+    bodyMedium: 'WorkSans_500Medium',
+    bodySemibold: 'WorkSans_600SemiBold',
+  },
+} as const;
+
+function fontFor(name: ThemeName) {
+  return name.startsWith('MODERN') ? FONTS.MODERN : FONTS.DEFAULT;
+}
+
+/**
  * CSS-variable map NativeWind consumes — color tokens plus skin vars (border width
  * + radius) that give each family its shape. Exposed as `border-skin` /
  * `rounded-skin[-sm]` utilities in tailwind.config.
@@ -80,6 +107,7 @@ function skinFor(name: ThemeName) {
 export function themeVars(name: ThemeName): Record<string, string> {
   const t = THEME_TOKENS[name];
   const skin = skinFor(name);
+  const font = fontFor(name);
   return {
     '--color-bg': t.bg,
     '--color-panel': t.panel,
@@ -95,5 +123,11 @@ export function themeVars(name: ThemeName): Record<string, string> {
     '--border-w': skin.borderW,
     '--radius': skin.radius,
     '--radius-sm': skin.radiusSm,
+    // Per-family fonts consumed by tailwind.config fontFamily (font-serif/font-sans/…).
+    '--font-title': font.title,
+    '--font-title-italic': font.titleItalic,
+    '--font-body': font.body,
+    '--font-body-medium': font.bodyMedium,
+    '--font-body-semibold': font.bodySemibold,
   };
 }

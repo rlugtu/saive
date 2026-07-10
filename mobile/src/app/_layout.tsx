@@ -25,6 +25,12 @@ import {
   WorkSans_500Medium,
   WorkSans_600SemiBold,
 } from '@expo-google-fonts/work-sans';
+import {
+  Geist_400Regular,
+  Geist_500Medium,
+  Geist_500Medium_Italic,
+  Geist_600SemiBold,
+} from '@expo-google-fonts/geist';
 
 import LoginScreen from '@/components/login-screen';
 import OnboardingScreen from '@/components/onboarding-screen';
@@ -61,6 +67,11 @@ export default function RootLayout() {
     WorkSans_400Regular,
     WorkSans_500Medium,
     WorkSans_600SemiBold,
+    // Modern theme (per-theme font vars in theme/tokens.ts select these).
+    Geist_400Regular,
+    Geist_500Medium,
+    Geist_500Medium_Italic,
+    Geist_600SemiBold,
   });
 
   useEffect(() => {

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import {
   Press_Start_2P,
   VT323,
-  Inter,
+  Geist,
   Newsreader,
   Work_Sans,
 } from "next/font/google";
@@ -25,8 +25,8 @@ const vt323 = VT323({
   subsets: ["latin"],
 });
 
-// Clean sans for the modern theme.
-const inter = Inter({
+// Sleek modern sans for the modern theme (Vercel's Geist).
+const geist = Geist({
   variable: "--font-sans",
   subsets: ["latin"],
 });
@@ -79,7 +79,7 @@ export default async function RootLayout({
     <html
       lang="en"
       data-theme={theme}
-      className={`${pressStart.variable} ${vt323.variable} ${inter.variable} ${newsreader.variable} ${workSans.variable} h-full antialiased`}
+      className={`${pressStart.variable} ${vt323.variable} ${geist.variable} ${newsreader.variable} ${workSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}

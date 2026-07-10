@@ -21,14 +21,16 @@ module.exports = {
       // Skin knobs — driven per theme by ThemeProvider vars() (pixel vs modern).
       borderWidth: { skin: "var(--border-w)" },
       borderRadius: { skin: "var(--radius)", "skin-sm": "var(--radius-sm)" },
-      // Journal type: Newsreader (serif) for titles, Work Sans for UI. Custom fonts
-      // are loaded per-weight (RN doesn't synthesize weights), so weight = family.
+      // Font families -> CSS vars set per theme by ThemeProvider (vars()), same as
+      // colors above. Modern = Geist; Journal/Pixel = Newsreader (titles) + Work Sans.
+      // Custom fonts are loaded per-weight (RN doesn't synthesize weights), so the
+      // var resolves to a specific loaded "weight = family" name.
       fontFamily: {
-        serif: ["Newsreader_600SemiBold"],
-        "serif-italic": ["Newsreader_500Medium_Italic"],
-        sans: ["WorkSans_400Regular"],
-        "sans-medium": ["WorkSans_500Medium"],
-        "sans-semibold": ["WorkSans_600SemiBold"],
+        serif: ["var(--font-title)"],
+        "serif-italic": ["var(--font-title-italic)"],
+        sans: ["var(--font-body)"],
+        "sans-medium": ["var(--font-body-medium)"],
+        "sans-semibold": ["var(--font-body-semibold)"],
       },
     },
   },

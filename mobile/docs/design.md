@@ -52,6 +52,10 @@ per-tag colors (`tag-colors.ts`) carry over unchanged.
 
 ## Typography
 
+Fonts are **per-family** (theme-driven CSS vars in `src/theme/tokens.ts` → `font-serif`/`font-sans`
+NativeWind classes). The **Modern** family uses **Geist** (sleek all-sans — titles *and* body). The
+below describes the **Journal**/Pixel families:
+
 - **Newsreader** (serif), weight 500–600 — list/bookmark names, screen titles.
   Italic weight for empty-state/annotation copy (e.g. `"No bookmarks yet — add your
   first find."`).
@@ -127,5 +131,7 @@ renders the same toggle-list, and the pills / Clear-all block renders when
   picks another in Settings); Pixel and Modern remain available.
 - **Photo-less bookmarks** — `PhotoCard` renders a solid warm placeholder tile (not a compact-row
   fallback) in list view.
-- **Fonts** — Newsreader (serif) and Work Sans (sans) are bundled via `@expo-google-fonts/*` and
-  loaded (`expo-font`) before the splash hides.
+- **Fonts** — per-family, bundled via `@expo-google-fonts/*` and loaded (`expo-font`) before the
+  splash hides: **Geist** (Modern), Newsreader + Work Sans (Journal/Pixel). Font family names are
+  emitted as CSS vars per theme in `src/theme/tokens.ts` (`fontFor`) and consumed by
+  `tailwind.config.js` `fontFamily` (same var mechanism as colors).

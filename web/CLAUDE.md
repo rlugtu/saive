@@ -45,7 +45,8 @@ Run these from `web/` (the app no longer lives at the repo root).
   `MODERN_LIGHT`**); registry + enum↔`data-theme` map + validation in `src/lib/theme.ts`. The
   `.pixel-*` primitives are the retro skin; **unlayered** `[data-theme^="modern"]` /
   `[data-theme^="journal"]` CSS overrides them for the modern/journal skins (adding a theme is pure
-  CSS — journal also adds Newsreader + Work Sans fonts in `layout.tsx`).
+  CSS). Fonts are per-family (loaded in `layout.tsx`, keyed off CSS vars): modern = **Geist**
+  (`--font-sans`, titles + body); journal = Newsreader + Work Sans; pixel = Press Start 2P + VT323.
 
 ## Gotchas
 - **Prisma 7**: `migrate dev` does NOT reliably regenerate the client — run `npx prisma generate`
