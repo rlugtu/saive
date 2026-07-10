@@ -64,7 +64,7 @@ with a link or a location.
 | Home search | ⚠️ | ⚠️ | Web: unified list + cross-list tag filter · Mobile: local name search |
 | Bookmarks — CRUD & fields | ✅ | ✅ | URLs, images, notes, rating, visited, location, tags |
 | Standalone multi-list bookmark create | ✅ | ✅ | One independent copy per selected list |
-| Link metadata autofill | ✅ | ✅ | Paste URL → title/description/images/video |
+| Link metadata autofill | ✅ | ✅ | Paste URL → LinkPreview extract + LLM comprehension → clean name/description/tags/location/images/video |
 | Location autocomplete + business autofill | ✅ | ✅ | Mapbox Search Box |
 | Video detection & player | ⚠️ | ⚠️ | Web iframe click-to-play · Mobile `expo-video` + WebView |
 | Tags (user-scoped, auto-colored, OR filter) | ✅ | ✅ | Per-list filter: web dropdown · mobile bottom sheet |
@@ -143,11 +143,18 @@ surface (notes, coords, video, extra URLs).
 **Differences.** None — same procedure, same behavior.
 
 ### Link metadata autofill
-**Description.** Paste a link and the bookmark auto-fills from the page's metadata (title,
-description, images) and detects a playable video.
-**Web / Mobile.** Both call `metadata.fetch` (YouTube via fast oEmbed; everything else via
-Microlink) plus `detectVideo`. Web: button in `BookmarkForm`. Mobile: manual button **and**
-auto-trigger when opened with a `?url=` param (e.g. from a share).
+**Description.** Paste a link and the bookmark auto-fills with clean, readable fields — a
+tidied name, a `Link Summary:`-prefixed description that also breaks out vital details
+(Ingredients, Steps, Hours, Event Details, …) when the page has them, suggested tags, and an
+inferred location — plus images and a detected playable video.
+**Web / Mobile.** Both call `metadata.fetch`, a two-stage pipeline: **extraction** (YouTube via
+fast oEmbed; everything else via **LinkPreview**, falling back to **Microlink**) + `detectVideo`,
+then a **comprehension** layer (`comprehendMetadata`, `claude-haiku-4-5`) that cleans the
+title, summarizes, and adds `tags` + `location`. For articles it also fetches the page's readable
+text server-side (`core/page-text.ts`, SSRF-guarded) so the LLM can extract those detail sections.
+Web: button in `BookmarkForm`. Mobile: manual button **and** auto-trigger when opened with a
+`?url=` param (e.g. from a share). Both keys are optional — autofill degrades to raw metadata
+when they're unset.
 **Differences.** Mobile also auto-fires autofill on mount for shared URLs; otherwise identical.
 
 ### Location autocomplete + business autofill

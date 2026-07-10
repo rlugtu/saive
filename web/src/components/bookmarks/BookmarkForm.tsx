@@ -67,6 +67,15 @@ export function BookmarkForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // TagInput / LocationInput are self-managed (seeded from their defaults), so we
+  // push comprehension-suggested tags/location by re-seeding + remounting via `key`.
+  const [seedTags, setSeedTags] = useState<string[]>(defaults?.tags ?? []);
+  const [tagKey, setTagKey] = useState(0);
+  const [seedLocation, setSeedLocation] = useState(defaults?.location ?? "");
+  const [seedLat, setSeedLat] = useState<number | null>(defaults?.latitude ?? null);
+  const [seedLon, setSeedLon] = useState<number | null>(defaults?.longitude ?? null);
+  const [locKey, setLocKey] = useState(0);
+
   function addSourceUrl(source: string) {
     setUrls((prev) => {
       const lines = prev
@@ -104,6 +113,18 @@ export function BookmarkForm({
     if (d.video) {
       setVideoUrl(d.video.url);
       setVideoType(d.video.type);
+    }
+    // Comprehension-suggested tags/location (remount the child to re-seed). Only
+    // reseed location when the link yields one, so a picked place is preserved.
+    if (d.tags.length) {
+      setSeedTags(d.tags);
+      setTagKey((k) => k + 1);
+    }
+    if (d.location) {
+      setSeedLocation(d.location);
+      setSeedLat(null); // inferred text has no coordinates
+      setSeedLon(null);
+      setLocKey((k) => k + 1);
     }
     setLink("");
   }
@@ -191,9 +212,10 @@ export function BookmarkForm({
         {/* From a place */}
         <div className="flex flex-col gap-1.5">
           <LocationInput
-            initialLocation={defaults?.location ?? ""}
-            initialLat={defaults?.latitude ?? null}
-            initialLon={defaults?.longitude ?? null}
+            key={locKey}
+            initialLocation={seedLocation}
+            initialLat={seedLat}
+            initialLon={seedLon}
             onAutofill={handleLocationAutofill}
           />
           <p className="text-muted text-sm">
@@ -333,7 +355,8 @@ export function BookmarkForm({
           <div className="flex flex-col gap-2">
             <FieldLabel>Tags</FieldLabel>
             <TagInput
-              defaultValue={defaults?.tags ?? []}
+              key={tagKey}
+              defaultValue={seedTags}
               suggestions={tagSuggestions}
               existing={existingTags}
               tagColors={tagColors}

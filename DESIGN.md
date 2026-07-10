@@ -231,9 +231,15 @@ Pause for review after **each** step.
       (home/list/bookmark), 8-bit `not-found.tsx`, responsive header pass.
 
 ### Post-v1 updates
-- **Link autofill**: paste a URL in the bookmark form → `fetchLinkMetadata` unfurls it
-  (YouTube via oEmbed, everything else via Microlink) to prefill name/description/photos;
-  `urls[0]` keeps the original source. Bookmarks gained an `images String[]` field.
+- **Link autofill**: paste a URL in the bookmark form → `fetchLinkMetadata` runs a two-stage
+  pipeline. **Extraction** unfurls the page (YouTube via oEmbed; everything else via
+  **LinkPreview**, falling back to **Microlink**). **Comprehension** (`comprehendMetadata`,
+  `claude-haiku-4-5`) then cleans the title, writes a `Link Summary:`-prefixed description, and
+  adds suggested `tags` + an inferred `location`. For articles it also fetches the page's readable
+  text server-side (`core/page-text.ts`, SSRF-guarded) so the LLM can extract vital detail
+  sections (Ingredients, Steps, Hours, Event Details, …) appended under the summary. The result
+  carries `tags`/`location` alongside name/description/photos. `urls[0]` keeps the original source.
+  Every stage degrades gracefully when its key is unset. Bookmarks gained an `images String[]` field.
 - **Bookmark UI**: removed the per-bookmark emoji icon; card thumbnails; single-list search
   (name + tag pills); create-form quick-add chips for tags already in the list.
 - **PWA**: web manifest, generated icons (any + maskable + apple), a service worker with an
@@ -417,10 +423,10 @@ table in sync whenever a procedure is added or changed.**
 | `places.search` | query | `{ text, sessionToken }` | signed-in | `core/places.searchPlaces` |
 | `places.retrieve` | query | `{ id, sessionToken }` | signed-in | `core/places.retrievePlace` |
 | `places.reverseGeocode` | query | `{ lat, lon }` | signed-in | `core/places.reverseGeocode` |
-| `metadata.fetch` | query | `{ url }` | signed-in | `core/metadata.fetchLinkMetadata` |
+| `metadata.fetch` | query | `{ url }` | signed-in | `core/metadata.fetchLinkMetadata` (extract via LinkPreview→Microlink, then `comprehendMetadata`; result adds `tags`/`location`) |
 | `comprehend.caption` | query | `{ caption, author?, sourceUrl? }` | signed-in | `core/comprehend.comprehendCaption` |
 
-The external-service lookups (`places` — Mapbox, `metadata` — Microlink, `comprehend` — Anthropic)
+The external-service lookups (`places` — Mapbox, `metadata` — LinkPreview/Microlink + Anthropic, `comprehend` — Anthropic)
 run server-side so mobile gets autocomplete/autofill/AI-extract without shipping any API keys; the
 secrets stay in `web/`'s env.
 

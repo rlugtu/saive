@@ -89,6 +89,11 @@ export default function BookmarkForm({
         if (res.data.images.length) setImages(res.data.images);
         setVideoUrl(res.data.video?.url ?? '');
         setVideoType(res.data.video?.type ?? '');
+        // Comprehension-suggested tags/location — only fill empty fields so we
+        // never clobber what the user already typed.
+        if (res.data.tags.length && !tagsText.trim())
+          setTagsText(res.data.tags.join(', '));
+        if (res.data.location && !location.trim()) setLocation(res.data.location);
       } else {
         setError(res.error);
       }
