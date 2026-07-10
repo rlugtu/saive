@@ -1,7 +1,9 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -15,6 +17,9 @@ import { LocationInput } from '@/components/location-input';
 import { useTheme } from '@/theme/theme-provider';
 import { THEME_TOKENS } from '@/theme/tokens';
 import type { RetrievedPlace } from '@web/lib/core/places';
+
+// Hard cap on the blocking autofill fetch so the loading overlay can never hang.
+const AUTOFILL_TIMEOUT_MS = 15000;
 
 // The exact `data` shape web's create/update procedures accept — no hand DTOs.
 export type BookmarkData = Parameters<
@@ -79,10 +84,18 @@ export default function BookmarkForm({
 
   async function autofill() {
     if (!url.trim()) return;
+    // Drop the keyboard the instant the (blocking) fetch begins.
+    Keyboard.dismiss();
     setAutofilling(true);
     setError(null);
+    // The overlay blocks all interaction, so the fetch must always resolve — cap it.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), AUTOFILL_TIMEOUT_MS);
     try {
-      const res = await trpc.metadata.fetch.query({ url: url.trim() });
+      const res = await trpc.metadata.fetch.query(
+        { url: url.trim() },
+        { signal: controller.signal },
+      );
       if (res.ok) {
         if (res.data.title) setName(res.data.title);
         if (res.data.description) setDescription(res.data.description);
@@ -98,9 +111,17 @@ export default function BookmarkForm({
         setError(res.error);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Autofill failed');
+      setError(
+        controller.signal.aborted
+          ? 'Autofill timed out. Try again.'
+          : e instanceof Error
+            ? e.message
+            : 'Autofill failed',
+      );
+    } finally {
+      clearTimeout(timer);
+      setAutofilling(false);
     }
-    setAutofilling(false);
   }
 
   // Auto-fetch page metadata once when the form opens with a prefilled URL
@@ -130,9 +151,15 @@ export default function BookmarkForm({
     setVideoType('');
 
     if (!place.website) return;
+    Keyboard.dismiss();
     setAutofilling(true);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), AUTOFILL_TIMEOUT_MS);
     try {
-      const res = await trpc.metadata.fetch.query({ url: place.website });
+      const res = await trpc.metadata.fetch.query(
+        { url: place.website },
+        { signal: controller.signal },
+      );
       if (res.ok) {
         if (res.data.title && !place.name) setName(res.data.title);
         if (res.data.description) setDescription(res.data.description);
@@ -142,8 +169,10 @@ export default function BookmarkForm({
       }
     } catch {
       // Keep the basics set above.
+    } finally {
+      clearTimeout(timer);
+      setAutofilling(false);
     }
-    setAutofilling(false);
   }
 
   async function submit() {
@@ -184,7 +213,13 @@ export default function BookmarkForm({
         className="flex-1 bg-bg"
         contentContainerStyle={{ padding: 16, gap: 12 }}
         keyboardShouldPersistTaps="handled">
-        {header}
+        {header ? (
+          <>
+            {header}
+            {/* Separate the list-picker section from the autofill input below. */}
+            <View className="my-1 border-t border-border" />
+          </>
+        ) : null}
         <View className="flex-row gap-2">
           <TextInput
             className="flex-1 rounded-skin border-skin border-border px-4 py-3 text-ink"
@@ -272,6 +307,23 @@ export default function BookmarkForm({
           )}
         </Pressable>
       </ScrollView>
+
+      {/* Full-screen blocking overlay while link data is fetched: dims the whole
+          screen and intercepts all touches until the fetch resolves. */}
+      <Modal
+        transparent
+        visible={autofilling}
+        animationType="fade"
+        onRequestClose={() => {}}>
+        <View
+          className="flex-1 items-center justify-center"
+          style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
+          <View className="items-center gap-3 rounded-skin bg-panel px-8 py-6">
+            <ActivityIndicator size="large" color={THEME_TOKENS[theme].primary} />
+            <Text className="text-ink">Fetching link…</Text>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
