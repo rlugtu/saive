@@ -1,12 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { trpc } from '@/client/api';
 import { useTheme } from '@/theme/theme-provider';
 import { THEME_TOKENS } from '@/theme/tokens';
 import { cardShadow } from '@/theme/shadows';
+import { useTabBarScrollHandler } from '@/theme/tab-bar-scroll';
 
 // Inferred straight from web's tRPC procedure — no hand-written DTOs.
 type Memberships = Awaited<ReturnType<typeof trpc.lists.mine.query>>;
@@ -17,6 +19,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const muted = THEME_TOKENS[theme].muted;
+  const onScroll = useTabBarScrollHandler();
 
   const [lists, setLists] = useState<Memberships>([]);
   const [query, setQuery] = useState('');
@@ -41,9 +44,11 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']} className="bg-bg">
-      <FlatList
+      <Animated.FlatList
         data={shown}
         keyExtractor={(m) => m.list.id}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 16 }}
         ListHeaderComponent={
           <View className="gap-3 pb-1">
