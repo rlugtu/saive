@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 
 import { trpc } from '@/client/api';
 import TagPill from '@/components/tag-pill';
+import { useTabBarScrollHandler } from '@/theme/tab-bar-scroll';
 
 type NearbyResult = Awaited<ReturnType<typeof trpc.nearby.find.query>>;
 type NearbyItem = Extract<NearbyResult, { ok: true }>['data'][number];
@@ -18,6 +20,7 @@ const formatCoords = (lat: number, lon: number) =>
 
 export default function NearbyScreen() {
   const router = useRouter();
+  const onScroll = useTabBarScrollHandler();
   const [radius, setRadius] = useState(5);
   const [items, setItems] = useState<NearbyItem[]>([]);
   const [skipped, setSkipped] = useState(0);
@@ -100,9 +103,11 @@ export default function NearbyScreen() {
           </Text>
         )}
 
-        <FlatList
+        <Animated.FlatList
           data={items}
           keyExtractor={(it) => `${it.listId}:${it.card.id}`}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           contentContainerStyle={{ gap: 8, paddingBottom: 120 }}
           renderItem={({ item }) => (
             <Pressable

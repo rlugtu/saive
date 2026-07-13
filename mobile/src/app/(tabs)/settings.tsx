@@ -1,9 +1,11 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
 
 import { authClient, clearBearerToken } from '@/client/auth';
 import { useTheme } from '@/theme/theme-provider';
 import { THEME_TOKENS, type ThemeName } from '@/theme/tokens';
+import { useTabBarScrollHandler } from '@/theme/tab-bar-scroll';
 
 const THEME_LABELS: Record<ThemeName, string> = {
   JOURNAL_LIGHT: 'Journal · Light',
@@ -17,10 +19,14 @@ const THEME_LABELS: Record<ThemeName, string> = {
 export default function SettingsScreen() {
   const { theme, setTheme } = useTheme();
   const { data: session } = authClient.useSession();
+  const onScroll = useTabBarScrollHandler();
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-bg">
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 20 }}>
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 20 }}>
         <Text className="text-2xl font-bold text-ink">Settings</Text>
 
         <View className="gap-2">
@@ -71,7 +77,7 @@ export default function SettingsScreen() {
           }}>
           <Text className="font-semibold text-danger">Sign out</Text>
         </Pressable>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
