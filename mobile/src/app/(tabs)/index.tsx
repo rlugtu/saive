@@ -12,6 +12,7 @@ import { useTabBarScrollHandler } from '@/theme/tab-bar-scroll';
 
 // Inferred straight from web's tRPC procedure — no hand-written DTOs.
 type Memberships = Awaited<ReturnType<typeof trpc.lists.mine.query>>;
+type Requests = Awaited<ReturnType<typeof trpc.sharing.incomingRequests.query>>;
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -22,19 +23,35 @@ export default function HomeScreen() {
   const onScroll = useTabBarScrollHandler();
 
   const [lists, setLists] = useState<Memberships>([]);
+  const [requests, setRequests] = useState<Requests>([]);
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useFocusEffect(
-    useCallback(() => {
-      trpc.lists.mine
-        .query()
-        .then(setLists)
-        .catch((e) => setError(e instanceof Error ? e.message : 'Request failed'))
-        .finally(() => setLoading(false));
-    }, []),
-  );
+  const load = useCallback(() => {
+    trpc.lists.mine
+      .query()
+      .then(setLists)
+      .catch((e) => setError(e instanceof Error ? e.message : 'Request failed'))
+      .finally(() => setLoading(false));
+    trpc.sharing.incomingRequests.query().then(setRequests).catch(() => {});
+  }, []);
+
+  useFocusEffect(useCallback(() => load(), [load]));
+
+  async function decideRequest(
+    inviteId: string,
+    decision: 'approve' | 'reject',
+  ) {
+    // Optimistically drop the row; refresh lists so an approved list appears.
+    setRequests((cur) => cur.filter((r) => r.id !== inviteId));
+    if (decision === 'approve') {
+      await trpc.sharing.approveRequest.mutate({ inviteId });
+    } else {
+      await trpc.sharing.rejectRequest.mutate({ inviteId });
+    }
+    load();
+  }
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -76,6 +93,40 @@ export default function HomeScreen() {
               value={query}
               onChangeText={setQuery}
             />
+
+            {requests.length > 0 && (
+              <View className="gap-2">
+                <Text className="font-sans-semibold text-sm text-primary">
+                  Collab requests
+                </Text>
+                {requests.map((req) => (
+                  <View
+                    key={req.id}
+                    className="rounded-skin border-skin border-border bg-panel p-3">
+                    <Text className="font-serif text-base text-ink" numberOfLines={1}>
+                      {req.list.icon} {req.list.name}
+                    </Text>
+                    <Text className="font-sans text-sm text-muted" numberOfLines={1}>
+                      {req.list.description || 'No description'}
+                    </Text>
+                    <View className="mt-2 flex-row justify-end gap-4">
+                      <Pressable
+                        onPress={() => decideRequest(req.id, 'reject')}
+                        hitSlop={8}>
+                        <Text className="font-sans text-muted">Reject</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => decideRequest(req.id, 'approve')}
+                        hitSlop={8}>
+                        <Text className="font-sans-semibold text-primary">
+                          Approve
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
 
             {loading && <Text className="font-sans text-muted">Loading…</Text>}
             {error && <Text className="font-sans text-danger">{error}</Text>}

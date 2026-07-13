@@ -18,11 +18,26 @@ export async function getListMembers(listId: string) {
   );
 }
 
-/** Pending (not-yet-accepted) invites for a list. */
+/** Pending (not-yet-decided) join requests for a list. */
 export function getPendingInvites(listId: string) {
   return prisma.listInvite.findMany({
     where: { listId, status: "PENDING" },
     orderBy: { createdAt: "asc" },
+  });
+}
+
+/**
+ * Pending list-join requests addressed to this email — the incoming "collab requests"
+ * shown on the home page. Newest first; includes list + inviter context.
+ */
+export function getIncomingRequests(email: string) {
+  return prisma.listInvite.findMany({
+    where: { email: email.toLowerCase(), status: "PENDING" },
+    orderBy: { createdAt: "desc" },
+    include: {
+      list: { select: { id: true, name: true, description: true, icon: true } },
+      invitedBy: { select: { displayName: true, name: true } },
+    },
   });
 }
 

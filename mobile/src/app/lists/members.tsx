@@ -37,6 +37,7 @@ export default function MembersScreen() {
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<InviteRole>('VIEWER');
   const [msg, setMsg] = useState<string | null>(null);
+  const [offerFriend, setOfferFriend] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -59,6 +60,7 @@ export default function MembersScreen() {
     if (!id || !email.trim()) return;
     setBusy(true);
     setMsg(null);
+    setOfferFriend(null);
     try {
       const res = await trpc.sharing.invite.mutate({
         listId: id,
@@ -66,12 +68,23 @@ export default function MembersScreen() {
         role: inviteRole,
       });
       setMsg(res.success ?? res.error ?? null);
+      setOfferFriend(res.offerFriend?.email ?? null);
       setEmail('');
       load();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Invite failed');
     }
     setBusy(false);
+  }
+
+  async function sendFriendRequest(friendEmail: string) {
+    setOfferFriend(null);
+    try {
+      const res = await trpc.friends.sendRequest.mutate({ email: friendEmail });
+      setMsg(res.success ?? res.error ?? null);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Request failed');
+    }
   }
 
   async function toggleRole(userId: string, role: InviteRole) {
@@ -157,6 +170,15 @@ export default function MembersScreen() {
             )}
           </Pressable>
           {msg && <Text className="text-muted">{msg}</Text>}
+          {offerFriend && (
+            <Pressable
+              className="items-center rounded-skin border-skin border-border py-2.5"
+              onPress={() => sendFriendRequest(offerFriend)}>
+              <Text className="text-primary">
+                {offerFriend} isn&apos;t your friend — add them?
+              </Text>
+            </Pressable>
+          )}
         </View>
       )}
 
@@ -193,7 +215,7 @@ export default function MembersScreen() {
 
       {isOwner && invites.length > 0 && (
         <View className="gap-2">
-          <Text className="text-sm uppercase text-muted">Pending invites</Text>
+          <Text className="text-sm uppercase text-muted">Pending requests</Text>
           {invites.map((inv) => (
             <View
               key={inv.id}

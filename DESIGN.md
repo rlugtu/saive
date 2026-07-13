@@ -98,9 +98,15 @@ List            id, name, description, icon, ownerId, createdAt
 ListMembership  id, listId, userId, role (OWNER|COLLABORATOR|VIEWER),
                 position (int — per-user ordering), createdAt
 
-ListInvite      id, listId, email, role, token, status (PENDING|ACCEPTED),
+ListInvite      id, listId, email, role, token, status (PENDING|ACCEPTED|REJECTED),
                 invitedById, createdAt
-                — auto-links to a user when that email signs up
+                — a PENDING invite is a **join request**: the invitee approves/rejects it
+                  on their home page ("collab requests"); nobody is added until approval.
+                  A new signup's pending invites surface as requests (no auto-join).
+
+Friendship      id, requesterId, addresseeId, status (PENDING|ACCEPTED), createdAt
+                — unique per (requesterId, addresseeId); a directed friend request that
+                  becomes mutual on ACCEPTED. "My friends" = ACCEPTED rows on either side.
 
 Bookmark        id, listId, name, description, urls (string[]),
                 images (string[]), notes, location, latitude?, longitude?,
@@ -128,6 +134,12 @@ PollVote        id, pollId, optionId, userId — unique per (optionId, userId); 
 
 **Relationships & rules**
 - A user sees a list on their home page if they own it **or** have a `ListMembership`.
+- **List sharing is request-based**: `inviteToList` creates a PENDING `ListInvite`; the invitee
+  approves it (→ `ListMembership` with the invite's role) or rejects it (→ REJECTED) from the
+  home-page "collab requests" section. Inviting a non-friend also offers to send a friend request.
+- **Friends** (`Friendship`) are added by email as a PENDING request the addressee accepts. Friends
+  can be bulk-added to lists (which sends per-list join requests) from the Friends page.
+- Deleting a user cascades their friendships (both sides).
 - Tags are user-scoped and shared across all of a user's lists (OR-matching in filters).
 - Deleting a list cascades its bookmarks, comments, memberships, invites, **and polls**.
 - Deleting a bookmark cascades its `BookmarkTag` links, comments, **and poll options** (each
@@ -148,8 +160,10 @@ PollVote        id, pollId, optionId, userId — unique per (optionId, userId); 
 | Comment (list & bookmark) | ✓ | ✓ | ✓ |
 | Create/edit/delete bookmarks | ✓ | ✓ | — |
 | Edit list metadata (name/icon/desc) | ✓ | ✓ | — |
-| Invite / change roles / remove members | ✓ | — | — |
+| Invite (send join request) / change roles / remove members | ✓ | — | — |
+| Approve / reject a join request addressed to you | invitee only | invitee only | invitee only |
 | Delete list | ✓ | — | — |
+| Add/accept/remove friends; add a friend to your lists | any signed-in user (self) | | |
 | Delete a comment | own + any on their list | own only | own only |
 | Reorder lists on **own** home page | ✓ | ✓ | ✓ |
 | Create a poll | ✓ | ✓ | — |
@@ -171,7 +185,8 @@ helper — never rely on UI gating alone.
 |---|---|
 | `/login` | Google + email/password (better-auth) |
 | `/onboarding` | First login only: displayName, birthday (optional), icon, theme |
-| `/` | **Home**: all lists you own or belong to; reorderable (Framer Motion drag) + unified search bar |
+| `/` | **Home**: all lists you own or belong to; reorderable (Framer Motion drag) + unified search bar; **collab requests** section (approve/reject incoming list-join requests) |
+| `/friends` | **Friends**: add friends by email; incoming friend requests (accept/decline); friends list — each row expands to **Edit** (remove friend) or **Add** (multiselect of your lists + role → send join requests) |
 | `/nearby` | **Near me**: find geocoded bookmarks within a chosen radius of your current location, closest→farthest |
 | `/bookmarks/new` | **New bookmark**: standalone create flow; pick/create one or more target lists and add the bookmark independently to each |
 | `/lists/[id]` | Bookmarks in a list; filter/search within; list-level comments; invite UI (owner) |
@@ -180,7 +195,7 @@ helper — never rely on UI gating alone.
 | `/lists/[id]/polls/new` | Create a poll: fields + a searchable/tag-filterable bookmark option picker (≥2) |
 | `/lists/[id]/polls/[pollId]` | Poll detail: **Vote**/**Results** toggle; edit/delete for the creator or list owner |
 | `/lists/[id]/polls/[pollId]/edit` | Edit a poll (creator or list owner); reconciles options |
-| `/settings` | Edit profile/theme/icon; manage/leave shared lists; pending invites |
+| `/settings` | Edit profile/theme/icon; manage/leave shared lists; pending requests |
 | `/invite/[token]` | Accept an invite |
 
 **Home search bar behavior** (unified control):
@@ -293,6 +308,14 @@ Pause for review after **each** step.
   the menu stays open for multi-select; selected rows show a highlighted/checked state. Picks feed the
   same client-side `selected` OR-filter as the typeahead (pills + Clear all below). Closes on outside
   click or Escape. Hand-rolled to match the existing dropdowns (no new dependency).
+- **Friends + request-based sharing**: added a `Friendship` model (email-based friend requests the
+  addressee accepts) and a `/friends` page (add friends, accept/decline incoming requests, per-friend
+  **Edit** = remove and **Add** = multiselect of your lists + role → send join requests). List
+  sharing became **request-based**: `inviteToList` now creates a PENDING `ListInvite` that the
+  invitee approves/rejects from a **collab requests** section on the home page (no more instant-add;
+  the signup auto-join hook was removed so a new user's pending invites appear as requests). Inviting
+  a non-friend offers to send a friend request too (`alsoFriend`). New tRPC `friends.*` router +
+  `sharing.incomingRequests`/`approveRequest`/`rejectRequest`; mirrored on web + mobile.
 
 ---
 
@@ -421,12 +444,22 @@ release builds don't reliably persist `Secure` cookies. `auth.api.getSession()` 
 | `polls.submitVotes` | mutation | `{ pollId, optionIds }` | VIEWER (in core) | `core.submitVotes` |
 | `sharing.members` | query | `{ listId }` | `assertRole` VIEWER | `getListMembers` |
 | `sharing.pendingInvites` | query | `{ listId }` | `assertRole` OWNER | `getPendingInvites` |
-| `sharing.invite` | mutation | `{ listId, email, role }` | OWNER (in core) | `core.inviteToList` |
+| `sharing.invite` | mutation | `{ listId, email, role, alsoFriend? }` | OWNER (in core) | `core.inviteToList` — sends a PENDING join request; may also send a friend request |
+| `sharing.incomingRequests` | query | – | self (by email) | `getIncomingRequests` |
+| `sharing.approveRequest` | mutation | `{ inviteId }` | invitee (email match, in core) | `core.approveRequest` |
+| `sharing.rejectRequest` | mutation | `{ inviteId }` | invitee (email match, in core) | `core.rejectRequest` |
 | `sharing.changeRole` | mutation | `{ listId, userId, role }` | OWNER (in core) | `core.changeMemberRole` |
 | `sharing.removeMember` | mutation | `{ listId, userId }` | OWNER (in core) | `core.removeMember` |
 | `sharing.revokeInvite` | mutation | `{ inviteId }` | OWNER (in core) | `core.revokeInvite` |
 | `sharing.leave` | mutation | `{ listId }` | non-owner member (in core) | `core.leaveList` |
 | `sharing.accept` | mutation | `{ token }` | any signed-in user w/ link | `core.acceptInvite` |
+| `friends.list` | query | – | self | `getFriends` + `getIncomingFriendRequests` |
+| `friends.friendListIds` | query | `{ friendId, listIds }` | self | `getFriendListIds` |
+| `friends.sendRequest` | mutation | `{ email }` | self | `core/friends.sendFriendRequest` |
+| `friends.accept` | mutation | `{ id }` | addressee (in core) | `core/friends.acceptFriendRequest` |
+| `friends.decline` | mutation | `{ id }` | addressee (in core) | `core/friends.declineFriendRequest` |
+| `friends.remove` | mutation | `{ id }` | either party (in core) | `core/friends.removeFriend` |
+| `friends.addToLists` | mutation | `{ friendId, listIds, role }` | OWNER per list (in core) | `core.addFriendToLists` |
 | `profile.update` | mutation | `ProfileInput` | self | `core.saveProfile` |
 | `tags.mine` | query | – | user-scoped | `getUserTags` |
 | `nearby.find` | query | `{ lat, lon, radiusMiles, listIds }` | user-scoped | `core.findNearbyBookmarks` |

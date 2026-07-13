@@ -61,7 +61,7 @@ export async function MembersPanel({
       {invites.length > 0 && (
         <div className="flex flex-col gap-2">
           <h3 className="font-pixel text-muted text-sm uppercase">
-            Pending invites
+            Pending requests
           </h3>
           {invites.map((inv) => (
             <div

@@ -2,7 +2,11 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { inviteRole } from "../inputs";
 import { assertRole } from "@/lib/permissions";
-import { getListMembers, getPendingInvites } from "@/lib/sharing";
+import {
+  getListMembers,
+  getPendingInvites,
+  getIncomingRequests,
+} from "@/lib/sharing";
 import * as core from "@/lib/core/sharing";
 
 export const sharingRouter = router({
@@ -21,12 +25,37 @@ export const sharingRouter = router({
     }),
 
   invite: protectedProcedure
-    .input(z.object({ listId: z.string(), email: z.string(), role: inviteRole }))
+    .input(
+      z.object({
+        listId: z.string(),
+        email: z.string(),
+        role: inviteRole,
+        alsoFriend: z.boolean().optional(),
+      }),
+    )
     .mutation(({ ctx, input }) =>
       core.inviteToList(ctx.user.id, ctx.user.email, input.listId, {
         email: input.email,
         role: input.role,
+        alsoFriend: input.alsoFriend,
       }),
+    ),
+
+  // Incoming list-join requests addressed to the current user (home page).
+  incomingRequests: protectedProcedure.query(({ ctx }) =>
+    getIncomingRequests(ctx.user.email),
+  ),
+
+  approveRequest: protectedProcedure
+    .input(z.object({ inviteId: z.string() }))
+    .mutation(({ ctx, input }) =>
+      core.approveRequest(ctx.user.id, ctx.user.email, input.inviteId),
+    ),
+
+  rejectRequest: protectedProcedure
+    .input(z.object({ inviteId: z.string() }))
+    .mutation(({ ctx, input }) =>
+      core.rejectRequest(ctx.user.email, input.inviteId),
     ),
 
   changeRole: protectedProcedure

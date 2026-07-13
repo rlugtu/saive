@@ -55,6 +55,18 @@ export async function leaveList(listId: string) {
   redirect("/");
 }
 
+export async function approveRequest(inviteId: string) {
+  const user = await requireUser();
+  await core.approveRequest(user.id, user.email, inviteId);
+  revalidatePath("/");
+}
+
+export async function rejectRequest(inviteId: string) {
+  const user = await requireUser();
+  await core.rejectRequest(user.email, inviteId);
+  revalidatePath("/");
+}
+
 export async function acceptInvite(token: string) {
   const user = await requireUser();
   const result = await core.acceptInvite(user.id, token);

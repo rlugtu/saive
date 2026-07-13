@@ -19,42 +19,9 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
   },
-  databaseHooks: {
-    user: {
-      create: {
-        // When a new user signs up, attach any pending list invites for their email.
-        after: async (user) => {
-          const invites = await prisma.listInvite.findMany({
-            where: { email: user.email, status: "PENDING" },
-          });
-          for (const invite of invites) {
-            const existing = await prisma.listMembership.findUnique({
-              where: {
-                listId_userId: { listId: invite.listId, userId: user.id },
-              },
-            });
-            if (!existing) {
-              const position = await prisma.listMembership.count({
-                where: { userId: user.id },
-              });
-              await prisma.listMembership.create({
-                data: {
-                  listId: invite.listId,
-                  userId: user.id,
-                  role: invite.role,
-                  position,
-                },
-              });
-            }
-            await prisma.listInvite.update({
-              where: { id: invite.id },
-              data: { status: "ACCEPTED" },
-            });
-          }
-        },
-      },
-    },
-  },
+  // No signup hook to auto-join invited users: list invites are now request-based, so
+  // a new user's PENDING invites (keyed by their email) surface as "collab requests" on
+  // their home page for them to approve — see core/sharing.ts approveRequest.
   // App profile fields collected at onboarding (see DESIGN.md §3).
   user: {
     additionalFields: {
