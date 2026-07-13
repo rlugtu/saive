@@ -4,6 +4,7 @@ import { bookmarksRouter } from "./routers/bookmarks";
 import { commentsRouter } from "./routers/comments";
 import { pollsRouter } from "./routers/polls";
 import { sharingRouter } from "./routers/sharing";
+import { friendsRouter } from "./routers/friends";
 import { profileRouter } from "./routers/profile";
 import { tagsRouter } from "./routers/tags";
 import { nearbyRouter } from "./routers/nearby";
@@ -25,6 +26,7 @@ export const appRouter = router({
   comments: commentsRouter,
   polls: pollsRouter,
   sharing: sharingRouter,
+  friends: friendsRouter,
   profile: profileRouter,
   tags: tagsRouter,
   nearby: nearbyRouter,

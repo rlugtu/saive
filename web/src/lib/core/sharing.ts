@@ -1,9 +1,17 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { assertRole } from "@/lib/permissions";
+import { areFriends } from "@/lib/friends";
+import { sendFriendRequestById } from "@/lib/core/friends";
 
 export type InviteRole = "VIEWER" | "COLLABORATOR";
-export type InviteState = { error?: string; success?: string };
+export type InviteState = {
+  error?: string;
+  success?: string;
+  // Set when the invitee is an existing user who isn't a friend yet, so the UI can
+  // offer to send them a friend request too (see the "Add as friend?" prompt).
+  offerFriend?: { email: string };
+};
 
 /** Give a member the next position at the end of their personal ordering. */
 function nextPosition(userId: string) {
@@ -11,15 +19,43 @@ function nextPosition(userId: string) {
 }
 
 /**
- * Owner invites someone by email. If that email already belongs to a user, they
- * become a member immediately; otherwise a pending invite waits for signup.
- * `actorEmail` is the inviting user's email (for the self-invite guard).
+ * Create or refresh a PENDING join request for `email` on `listId`. Resets a prior
+ * REJECTED request so an owner can re-send. Returns the matched user (if any) and
+ * whether they're already a member (so callers can skip / message appropriately).
+ */
+async function requestListJoin(
+  listId: string,
+  email: string,
+  role: InviteRole,
+  invitedById: string,
+) {
+  const invitee = await prisma.user.findUnique({ where: { email } });
+  if (invitee) {
+    const existing = await prisma.listMembership.findUnique({
+      where: { listId_userId: { listId, userId: invitee.id } },
+    });
+    if (existing) return { invitee, status: "member" as const };
+  }
+  await prisma.listInvite.upsert({
+    where: { listId_email: { listId, email } },
+    update: { role, status: "PENDING" },
+    create: { listId, email, role, invitedById },
+  });
+  return { invitee, status: "requested" as const };
+}
+
+/**
+ * Owner sends someone a list-join **request** by email. Nobody is added until the
+ * invitee approves it on their home page (see `approveRequest`); non-users get a
+ * pending invite that surfaces as a request once they sign up. `actorEmail` powers
+ * the self-invite guard. When `alsoFriend` is set and the invitee is an existing
+ * non-friend, a friend request is sent too; otherwise `offerFriend` lets the UI ask.
  */
 export async function inviteToList(
   userId: string,
   actorEmail: string,
   listId: string,
-  input: { email: string; role: InviteRole },
+  input: { email: string; role: InviteRole; alsoFriend?: boolean },
 ): Promise<InviteState> {
   await assertRole(userId, listId, "OWNER");
 
@@ -28,38 +64,108 @@ export async function inviteToList(
   if (email === actorEmail.toLowerCase()) {
     return { error: "You already own this list." };
   }
-  const role = input.role;
 
-  await prisma.listInvite.upsert({
-    where: { listId_email: { listId, email } },
-    update: { role },
-    create: { listId, email, role, invitedById: userId },
-  });
-
-  const invitee = await prisma.user.findUnique({ where: { email } });
-  if (invitee) {
-    const existing = await prisma.listMembership.findUnique({
-      where: { listId_userId: { listId, userId: invitee.id } },
-    });
-    if (existing) {
-      return { success: `${email} is already a member.` };
-    }
-    await prisma.listMembership.create({
-      data: {
-        listId,
-        userId: invitee.id,
-        role,
-        position: await nextPosition(invitee.id),
-      },
-    });
-    await prisma.listInvite.update({
-      where: { listId_email: { listId, email } },
-      data: { status: "ACCEPTED" },
-    });
-    return { success: `Added ${email} to the list.` };
+  const { invitee, status } = await requestListJoin(
+    listId,
+    email,
+    input.role,
+    userId,
+  );
+  if (status === "member") {
+    return { success: `${email} is already a member.` };
   }
 
-  return { success: `Invite sent to ${email}. They'll join on signup.` };
+  const isFriend = invitee ? await areFriends(userId, invitee.id) : false;
+
+  let friended = false;
+  if (invitee && input.alsoFriend && !isFriend) {
+    friended = await sendFriendRequestById(userId, invitee.id);
+  }
+
+  const base = invitee
+    ? `Request sent to ${email}.`
+    : `Invite sent to ${email}. They'll join on signup.`;
+
+  return {
+    success: friended ? `${base} Friend request sent too.` : base,
+    offerFriend: invitee && !isFriend && !friended ? { email } : undefined,
+  };
+}
+
+/**
+ * Send list-join requests to a friend for several lists at once (Friends page "add"
+ * panel). Skips lists the friend already belongs to; `role` applies to all of them.
+ */
+export async function addFriendToLists(
+  userId: string,
+  friendId: string,
+  listIds: string[],
+  role: InviteRole,
+): Promise<InviteState> {
+  const friend = await prisma.user.findUnique({
+    where: { id: friendId },
+    select: { email: true },
+  });
+  if (!friend) return { error: "Friend not found." };
+  if (!(await areFriends(userId, friendId))) {
+    return { error: "You can only add friends to lists." };
+  }
+
+  const email = friend.email.toLowerCase();
+  let sent = 0;
+  for (const listId of listIds) {
+    await assertRole(userId, listId, "OWNER");
+    const { status } = await requestListJoin(listId, email, role, userId);
+    if (status === "requested") sent += 1;
+  }
+  return {
+    success:
+      sent === 0
+        ? "No new requests — already a member of the selected lists."
+        : `Sent ${sent} list request${sent === 1 ? "" : "s"}.`,
+  };
+}
+
+/** The invited user approves a pending request, joining the list with its role. */
+export async function approveRequest(
+  userId: string,
+  userEmail: string,
+  inviteId: string,
+) {
+  const invite = await prisma.listInvite.findUnique({ where: { id: inviteId } });
+  if (!invite || invite.email !== userEmail.toLowerCase()) {
+    throw new Error("Request not found.");
+  }
+  const existing = await prisma.listMembership.findUnique({
+    where: { listId_userId: { listId: invite.listId, userId } },
+  });
+  if (!existing) {
+    await prisma.listMembership.create({
+      data: {
+        listId: invite.listId,
+        userId,
+        role: invite.role,
+        position: await nextPosition(userId),
+      },
+    });
+  }
+  await prisma.listInvite.update({
+    where: { id: invite.id },
+    data: { status: "ACCEPTED" },
+  });
+  return { listId: invite.listId };
+}
+
+/** The invited user rejects a pending request (marks it REJECTED). */
+export async function rejectRequest(userEmail: string, inviteId: string) {
+  const invite = await prisma.listInvite.findUnique({ where: { id: inviteId } });
+  if (!invite || invite.email !== userEmail.toLowerCase()) {
+    throw new Error("Request not found.");
+  }
+  await prisma.listInvite.update({
+    where: { id: invite.id },
+    data: { status: "REJECTED" },
+  });
 }
 
 /** Owner changes a member's role (viewer <-> collaborator). */

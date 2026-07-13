@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { inviteToList, type InviteState } from "@/lib/actions/sharing";
+import { offerFriend } from "@/lib/actions/friends";
 import { PixelInput } from "@/components/ui/PixelInput";
+import { PixelButton } from "@/components/ui/PixelButton";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export function InviteForm({ listId }: { listId: string }) {
@@ -10,6 +12,12 @@ export function InviteForm({ listId }: { listId: string }) {
     inviteToList.bind(null, listId),
     {},
   );
+  const [friended, setFriended] = useState<{ email: string; msg: string } | null>(
+    null,
+  );
+  const [pending, startTransition] = useTransition();
+
+  const offerEmail = state.offerFriend?.email;
 
   return (
     <form action={formAction} className="flex flex-col gap-2">
@@ -35,6 +43,33 @@ export function InviteForm({ listId }: { listId: string }) {
       </div>
       {state.error && <p className="text-danger text-sm">{state.error}</p>}
       {state.success && <p className="text-success text-sm">{state.success}</p>}
+      {offerEmail && friended?.email !== offerEmail && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted text-sm">
+            {offerEmail} isn&apos;t your friend yet.
+          </span>
+          <PixelButton
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={pending}
+            onClick={() =>
+              startTransition(async () => {
+                const res = await offerFriend(offerEmail);
+                setFriended({
+                  email: offerEmail,
+                  msg: res.success ?? res.error ?? "",
+                });
+              })
+            }
+          >
+            Add as friend?
+          </PixelButton>
+        </div>
+      )}
+      {friended && friended.email === offerEmail && (
+        <p className="text-success text-sm">{friended.msg}</p>
+      )}
     </form>
   );
 }

@@ -8,8 +8,9 @@ import { CreateListPanel } from "@/components/lists/CreateListPanel";
 import { HomeLists } from "@/components/lists/HomeLists";
 import { SearchBar } from "@/components/search/SearchBar";
 import { BookmarkCard } from "@/components/bookmarks/BookmarkCard";
+import { CollabRequests } from "@/components/sharing/CollabRequests";
 import { PixelButton } from "@/components/ui/PixelButton";
-import { Settings, MapPin } from "lucide-react";
+import { Settings, MapPin, Users } from "lucide-react";
 
 function parseTags(raw: string | undefined): string[] {
   if (!raw) return [];
@@ -79,6 +80,11 @@ export default async function Home({
               <MapPin size={14} aria-hidden /> Near me
             </PixelButton>
           </Link>
+          <Link href="/friends">
+            <PixelButton variant="secondary" size="sm">
+              <Users size={14} aria-hidden /> Friends
+            </PixelButton>
+          </Link>
           <Link href="/settings">
             <PixelButton variant="secondary" size="sm">
               <Settings size={14} aria-hidden /> Settings
@@ -126,6 +132,7 @@ export default async function Home({
         </section>
       ) : (
         <>
+          <CollabRequests email={user.email} />
           <div className="flex flex-wrap items-start justify-between gap-3">
             <CreateListPanel />
             <Link href="/bookmarks/new">

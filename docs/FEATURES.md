@@ -37,7 +37,10 @@ with a link or a location.
 - **Tag and filter.** Add colorful tags to bookmarks and filter to exactly what you're looking for.
 - **Search everything.** Find any list or bookmark fast.
 - **Share and collaborate.** Invite people to a list as a **viewer** (can look and comment) or a
-  **collaborator** (can add and edit). You stay in control as the owner.
+  **collaborator** (can add and edit) — they get a **request** to accept, so nobody's added without
+  opting in. You stay in control as the owner.
+- **Add friends.** Add people by email and, once they accept, bulk-invite a friend to any of your
+  lists in one step.
 - **Comment together.** Leave comments on lists and individual bookmarks to plan and discuss.
 - **Vote with polls.** Can't decide? Create a poll from bookmarks in a list and have the group vote
   (great for "where should we eat?").
@@ -69,7 +72,8 @@ with a link or a location.
 | Video detection & player | ⚠️ | ⚠️ | Web iframe click-to-play · Mobile `expo-video` + WebView |
 | Tags (user-scoped, auto-colored, OR filter) | ✅ | ✅ | Per-list filter: web dropdown · mobile bottom sheet |
 | Ratings / Visited / Notes | ✅ | ✅ | |
-| Sharing & permissions | ✅ | ✅ | Owner / Collaborator / Viewer, invites, roles |
+| Sharing & permissions | ✅ | ✅ | Owner / Collaborator / Viewer; **request-based** invites (invitee approves/rejects) |
+| Friends | ✅ | ✅ | Add by email (request + accept); bulk-add a friend to your lists |
 | Comments (lists & bookmarks) | ✅ | ✅ | |
 | Polls | ✅ | ✅ | Create / vote / edit / delete |
 | Nearby / geolocation | ⚠️ | ⚠️ | Web browser geo (0.5–10 mi) · Mobile native GPS (1–25 mi) |
@@ -198,12 +202,28 @@ filtering on the home screen.
 
 ### Sharing & permissions
 **Description.** Invite people to a list as **Viewer** (view + comment) or **Collaborator** (edit +
-comment); the **Owner** manages membership. Invites to non-existent emails stay pending and
-auto-link on signup. Non-owners can leave a shared list.
-**Web.** `MembersPanel` + `/invite/[token]`; `sharing.*` procedures; `assertRole` enforced on every
+comment); the **Owner** manages membership. Inviting sends a **join request** — nobody is added
+until the invitee **approves** it (or **rejects** it) from the **collab requests** section on their
+home page. Invites to non-existent emails stay pending and surface as a request when they sign up
+(no auto-join). Inviting a non-friend also offers to send them a friend request. Non-owners can
+leave a shared list.
+**Web.** `MembersPanel` + `CollabRequests` (home) + `/invite/[token]`; `sharing.*` procedures
+(`invite`, `incomingRequests`, `approveRequest`, `rejectRequest`, …); `assertRole` enforced on every
 mutation server-side.
-**Mobile.** `src/app/lists/members.tsx` with the same `sharing.*` procedures.
+**Mobile.** `src/app/lists/members.tsx` + a collab-requests section on `(tabs)/index.tsx`, same
+`sharing.*` procedures.
 **Differences.** None — permission logic is server-side and shared.
+
+### Friends
+**Description.** Add another user by **email** to send a **friend request**; they **accept** or
+**decline** it. Friends are mutual once accepted. Each friend row expands to **Edit** (remove the
+friend) or **Add** (a multiselect of your lists + a Viewer/Collaborator role → sends a list-join
+request per selected list; lists they already belong to are pre-selected). Removing a friend affects
+both parties.
+**Web.** `/friends` page (`AddFriendForm`, `FriendRequests`, `FriendRow`); `friends.*` procedures
+(`list`, `sendRequest`, `accept`, `decline`, `remove`, `addToLists`, `friendListIds`).
+**Mobile.** `src/app/(tabs)/friends.tsx` (Friends tab, before Settings), same `friends.*` procedures.
+**Differences.** None — logic is server-side and shared.
 
 ### Comments
 **Description.** Comment threads on both lists and bookmarks (any member, viewer+); delete your own,

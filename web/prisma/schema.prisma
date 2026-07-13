@@ -19,6 +19,12 @@ enum Role {
 enum InviteStatus {
   PENDING
   ACCEPTED
+  REJECTED
+}
+
+enum FriendStatus {
+  PENDING
+  ACCEPTED
 }
 
 enum Theme {
@@ -59,6 +65,24 @@ model User {
   comments    Comment[]
   polls       Poll[]           @relation("PollCreator")
   pollVotes   PollVote[]
+
+  friendRequestsSent     Friendship[] @relation("FriendRequester")
+  friendRequestsReceived Friendship[] @relation("FriendAddressee")
+}
+
+// A friendship between two users. Directed request (requester -> addressee) that
+// becomes mutual once accepted. "My friends" = ACCEPTED rows where I'm either side.
+model Friendship {
+  id          String       @id @default(uuid())
+  requesterId String
+  requester   User         @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addresseeId String
+  addressee   User         @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  status      FriendStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
 }
 
 // ---- better-auth managed models (generated via @better-auth/cli) ----

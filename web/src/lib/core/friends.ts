@@ -1,0 +1,84 @@
+import "server-only";
+import { prisma } from "@/lib/db";
+import { areFriends } from "@/lib/friends";
+
+export type FriendState = { error?: string; success?: string };
+
+/**
+ * Create a PENDING friend request from `requesterId` to `targetUserId` unless the two
+ * are already linked in either direction. Idempotent; returns whether a row was created.
+ * Shared by the email flow below and the "add as friend too?" list-invite prompt.
+ */
+export async function sendFriendRequestById(
+  requesterId: string,
+  targetUserId: string,
+) {
+  if (requesterId === targetUserId) return false;
+  const existing = await prisma.friendship.findFirst({
+    where: {
+      OR: [
+        { requesterId, addresseeId: targetUserId },
+        { requesterId: targetUserId, addresseeId: requesterId },
+      ],
+    },
+    select: { id: true },
+  });
+  if (existing) return false;
+  await prisma.friendship.create({
+    data: { requesterId, addresseeId: targetUserId },
+  });
+  return true;
+}
+
+/** Send a friend request by email (Friends page "add friend" form). */
+export async function sendFriendRequest(
+  userId: string,
+  actorEmail: string,
+  emailInput: string,
+): Promise<FriendState> {
+  const email = emailInput.trim().toLowerCase();
+  if (!email) return { error: "Email is required." };
+  if (email === actorEmail.toLowerCase()) {
+    return { error: "You can't add yourself." };
+  }
+  const target = await prisma.user.findUnique({ where: { email } });
+  if (!target) return { error: "No Klect user with that email." };
+  if (await areFriends(userId, target.id)) {
+    return { success: `You're already friends with ${email}.` };
+  }
+  const created = await sendFriendRequestById(userId, target.id);
+  return created
+    ? { success: `Friend request sent to ${email}.` }
+    : { success: `A request with ${email} is already pending.` };
+}
+
+/** Accept a friend request addressed to the current user. */
+export async function acceptFriendRequest(userId: string, friendshipId: string) {
+  const req = await prisma.friendship.findUnique({ where: { id: friendshipId } });
+  if (!req || req.addresseeId !== userId) {
+    throw new Error("Friend request not found.");
+  }
+  await prisma.friendship.update({
+    where: { id: friendshipId },
+    data: { status: "ACCEPTED" },
+  });
+}
+
+/** Decline a friend request addressed to the current user (deletes the row). */
+export async function declineFriendRequest(userId: string, friendshipId: string) {
+  const req = await prisma.friendship.findUnique({ where: { id: friendshipId } });
+  if (!req || req.addresseeId !== userId) {
+    throw new Error("Friend request not found.");
+  }
+  await prisma.friendship.delete({ where: { id: friendshipId } });
+}
+
+/** Remove a friend — either party may. No-op if the user isn't part of it. */
+export async function removeFriend(userId: string, friendshipId: string) {
+  const req = await prisma.friendship.findUnique({ where: { id: friendshipId } });
+  if (!req) return;
+  if (req.requesterId !== userId && req.addresseeId !== userId) {
+    throw new Error("You can't remove that friend.");
+  }
+  await prisma.friendship.delete({ where: { id: friendshipId } });
+}
