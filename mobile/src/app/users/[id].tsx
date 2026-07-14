@@ -5,11 +5,11 @@ import ProfileView from '@/components/profile-view';
 
 /** Another user's public profile, pushed from a friend row or list owner. */
 export default function UserProfileScreen() {
-  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
+  const { id } = useLocalSearchParams<{ id: string; name?: string }>();
   const headerHeight = useHeaderHeight();
   return (
     <>
-      <Stack.Screen options={{ title: name ?? 'Profile' }} />
+      <Stack.Screen options={{ headerTitle: () => null }} />
       <ProfileView userId={id} contentTopInset={headerHeight + 8} />
     </>
   );

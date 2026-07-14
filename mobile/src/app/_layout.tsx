@@ -69,18 +69,20 @@ function ShareIntentRouter() {
 function AppStack() {
   const theme = useTheme().theme;
   const t = THEME_TOKENS[theme];
-  // Modal sheets keep a solid header — only the full-screen pushed pages get the
-  // frosted, content-scrolls-under treatment (they pad their content by the header
-  // height; a modal card has no room to scroll under a translucent bar).
+  // No page shows a centered header title — the page name lives in the scrolling
+  // content instead. This blank title applies everywhere (pushed pages AND modals).
+  const blankTitle = { headerTitle: () => null };
+  // Modal sheets keep a solid header (for the floating back/close chevron) — only the
+  // full-screen pushed pages get the frosted, content-scrolls-under treatment (they
+  // pad their content by the header height; a modal card has no room to scroll under a
+  // translucent bar). Titleless like everything else.
   const opaqueModal = {
+    ...blankTitle,
     presentation: 'modal' as const,
     headerTransparent: false,
     headerBackground: undefined,
     headerStyle: { backgroundColor: t.bg },
   };
-  // Full-screen pushed pages carry no centered title — the buttons float over the
-  // gradient-blur bar and the page name lives in the scrolling content instead.
-  const blankTitle = { headerTitle: () => null };
   // Home-style header: fully transparent (just the floating back chevron); the gradual
   // blur is supplied by the screen's own <FloatingStatusBar /> instead of the header.
   const transparentHeader = { ...blankTitle, headerBackground: () => null };
@@ -104,28 +106,13 @@ function AppStack() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="lists/[id]" options={{ ...blankTitle }} />
       <Stack.Screen name="lists/members" options={{ ...blankTitle }} />
-      <Stack.Screen
-        name="lists/new"
-        options={{ ...opaqueModal, title: 'New list' }}
-      />
-      <Stack.Screen
-        name="lists/edit"
-        options={{ ...opaqueModal, title: 'Edit list' }}
-      />
+      <Stack.Screen name="lists/new" options={{ ...opaqueModal }} />
+      <Stack.Screen name="lists/edit" options={{ ...opaqueModal }} />
       <Stack.Screen name="bookmarks/[id]" options={{ ...blankTitle }} />
-      <Stack.Screen
-        name="bookmarks/new"
-        options={{ ...opaqueModal, title: 'New bookmark' }}
-      />
-      <Stack.Screen
-        name="bookmarks/edit"
-        options={{ ...opaqueModal, title: 'Edit bookmark' }}
-      />
+      <Stack.Screen name="bookmarks/new" options={{ ...opaqueModal }} />
+      <Stack.Screen name="bookmarks/edit" options={{ ...opaqueModal }} />
       <Stack.Screen name="polls/index" options={{ ...blankTitle }} />
-      <Stack.Screen
-        name="polls/new"
-        options={{ ...opaqueModal, title: 'New poll' }}
-      />
+      <Stack.Screen name="polls/new" options={{ ...opaqueModal }} />
       <Stack.Screen name="polls/[pollId]" options={{ ...blankTitle }} />
       <Stack.Screen name="users/[id]" options={{ ...transparentHeader }} />
       <Stack.Screen name="settings" options={{ ...blankTitle }} />

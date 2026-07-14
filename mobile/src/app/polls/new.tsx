@@ -144,7 +144,7 @@ export default function NewPollScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <Stack.Screen options={{ title: isEdit ? 'Edit poll' : 'New poll' }} />
+      <Stack.Screen options={{ headerTitle: () => null }} />
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
         <View className="gap-2">

@@ -99,32 +99,42 @@ border** — it's an `expo-blur` `BlurView` masked by a top→bottom alpha gradi
 (`expo-linear-gradient` + `@react-native-masked-view/masked-view`) so the blur **fades out
 gradually** instead of ending on a hard line. The floating status bar uses the same shared surface,
 so home and pushed pages read identically. There's no shadow (`headerShadowVisible: false`), and
-**no centered title** — every non-modal pushed screen sets `headerTitle: () => null` (the shared
-`blankTitle` option in `_layout.tsx`) so the back chevron + any header-right button appear to *float*.
+**no centered title** — every screen (pushed *and* modal) sets `headerTitle: () => null` (the shared
+`blankTitle` option in `_layout.tsx`, folded into `opaqueModal` too) so the back chevron + any
+header-right button appear to *float*.
 The page name instead lives in the **scrolling page body** (a `font-serif text-3xl` heading at the
 top of the content — screens whose name was header-only, like list detail / members / polls / settings
 / the three request views, gained one; bookmark detail, poll detail, and profiles already rendered
 theirs). The back button is chevron-only (`headerBackButtonDisplayMode: 'minimal'` — no route-name
 text) and the tint (back chevron) is `primary`. Because the header is transparent, each full-screen
 screen **pads its scroll container by `useHeaderHeight() + 8`** so content scrolls *under* the blur.
-The `(tabs)` group is a bottom `Tabs` navigator. Editors are presented as **modals**
-(`presentation: 'modal'`) and keep a **solid, titled** header (they override `headerTransparent` back
-off — a modal card has no room to scroll under a translucent bar).
+The `(tabs)` group is a **bottom-positioned swipeable pager** (`@react-navigation/material-top-tabs`
+with `tabBarPosition="bottom"`, `react-native-pager-view` under the hood, wired into expo-router via
+`withLayoutContext`). Editors are presented as **modals** (`presentation: 'modal'`) with a **solid,
+titleless** header — they override `headerTransparent` off (a modal card has no room to scroll under a
+translucent bar) but still set `headerTitle: () => null` like every other screen, so **no page shows a
+centered title anywhere in the app**.
 
-- **Tabs** (`(tabs)/_layout.tsx`, Ionicons), left→right: **Nearby**, **Create** (＋), **Lists**
-  (`index`), **Friends**, **Profile** — order is deliberate so **Lists sits dead-center** of the
-  five tabs (React Navigation renders tabs in `<Tabs.Screen>` declaration order). **Create** is an
-  **action tab**: it has no real screen (`(tabs)/create.tsx` renders `null`); its `tabPress` is
-  intercepted in the layout and pushes the standalone new-bookmark modal (`/bookmarks/new`) instead.
-  Settings is **not** a tab — it's a pushed stack route (`src/app/settings.tsx`) reached via the
-  **gear icon on the Profile screen**. Uses a
-  **custom floating glass pill** tab bar (`components/floating-tab-bar.tsx`, an Instagram-style
-  content-hugging pill — icon-only, vertically centered, `expo-blur` frosted background over a
-  translucent `panel` fallback, `cardShadow`) so tab content scrolls behind it. It **shrinks on
-  scroll-down and grows back on scroll-up** via a shared reanimated value in
-  `theme/tab-bar-scroll.tsx` (`TabBarScrollProvider` wraps the navigator; each tab's
-  `Animated.FlatList`/`Animated.ScrollView` feeds `useTabBarScrollHandler`). Each scroll container
-  pads its bottom to clear the pill. (Real blur needs a native build; dev shows the fallback.)
+- **Tabs** (`(tabs)/_layout.tsx`), left→right in the bar: **Nearby**, **Create** (＋), **Lists**
+  (`index`), **Friends**, **Profile**. The **swipe pager** holds only the four real pages in swipe
+  order — **Nearby → Lists → Friends → Profile** — so you can drag horizontally between screens.
+  **Create** is an **action button injected by the tab bar** (not a pager page, so there's no
+  `create.tsx`): it pushes the standalone new-bookmark modal (`/bookmarks/new`). Settings is **not** a
+  tab — it's a pushed stack route (`src/app/settings.tsx`) reached via the **gear icon on the Profile
+  screen**.
+- **Instagram-style tab bar** (`components/floating-tab-bar.tsx`): a **custom floating glass pill** —
+  icon-only, vertically centered, `expo-blur` frosted background over a translucent `panel` fallback,
+  `cardShadow` — so tab content scrolls behind it. Each tab renders an **outline (inactive) → filled
+  (active) Ionicons pair** inside a **concentric ring**; the outline→fill crossfade + ring are driven
+  by the pager's swipe `position`, so an icon **fills in proportion to how far you've dragged toward
+  it** (`location-outline`/`location`, `albums-outline`/`albums` for Lists, `people-outline`/`people`,
+  `person-circle-outline`/`person-circle`). Presses run a reanimated **spring squash on touch-down +
+  elastic rebound on release**, synchronized with an **`expo-haptics`** pulse (selection for tabs,
+  light impact for Create). The pill still **shrinks on scroll-down and grows back on scroll-up** via a
+  shared reanimated value in `theme/tab-bar-scroll.tsx` (`TabBarScrollProvider` wraps the navigator;
+  each tab's `Animated.FlatList`/`Animated.ScrollView` feeds `useTabBarScrollHandler`). Each scroll
+  container pads its bottom to clear the pill. (Real blur + haptics need a native build; dev shows the
+  fallback and no haptics on the Simulator.)
 - **Frosted status bar.** Tab screens drop the `top` safe-area edge, pad their scroll content by the
   top inset, and render `components/floating-status-bar.tsx` — a top-pinned strip whose glass surface
   is `components/header-blur-background.tsx` (an `expo-blur` `BlurView` masked to a top→bottom
