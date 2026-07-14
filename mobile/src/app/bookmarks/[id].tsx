@@ -15,6 +15,7 @@ import {
   useLocalSearchParams,
   useRouter,
 } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
 
 import { trpc } from '@/client/api';
 import BookmarkVideo from '@/components/bookmark-video';
@@ -35,6 +36,7 @@ function mapsUrl(location: string, lat: number | null, lon: number | null) {
 export default function BookmarkScreen() {
   const router = useRouter();
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
+  const headerHeight = useHeaderHeight();
   const [data, setData] = useState<BookmarkResult>(null);
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +89,7 @@ export default function BookmarkScreen() {
   return (
     <ScrollView
       className="flex-1 bg-bg"
-      contentContainerStyle={{ padding: 16, gap: 12 }}>
+      contentContainerStyle={{ padding: 16, paddingTop: headerHeight + 8, gap: 12 }}>
       <Stack.Screen
         options={{
           title: name ?? b?.name ?? 'Bookmark',

@@ -129,8 +129,8 @@ export default function HomeScreen() {
           onPress={() => router.push('/requests')}
           className="flex-row items-center gap-1.5"
           hitSlop={8}>
-          <Ionicons name="file-tray-outline" size={18} color={muted} />
-          <Text className="font-sans-medium text-muted">Requests</Text>
+          <Ionicons name="file-tray-outline" size={20} color={muted} />
+          <Text className="font-sans-medium text-lg text-muted">Requests</Text>
           {requestCount > 0 && (
             <View className="rounded-full bg-primary px-2 py-0.5">
               <Text className="font-sans-semibold text-xs text-primary-ink">
@@ -140,7 +140,7 @@ export default function HomeScreen() {
           )}
         </Pressable>
         <Pressable onPress={() => router.push('/lists/new')} hitSlop={8}>
-          <Text className="font-sans-semibold text-base text-primary">+ List</Text>
+          <Text className="font-sans-semibold text-lg text-primary">+ List</Text>
         </Pressable>
       </View>
 

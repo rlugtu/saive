@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { Stack, useFocusEffect } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
 
 import { trpc } from '@/client/api';
 import { cardShadow } from '@/theme/shadows';
@@ -18,6 +19,7 @@ const displayName = (u: {
 
 /** All incoming friend requests: accept or decline. Pushed from the Friends tab. */
 export default function FriendRequestsScreen() {
+  const headerHeight = useHeaderHeight();
   const [incoming, setIncoming] = useState<Incoming>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,7 +44,12 @@ export default function FriendRequestsScreen() {
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']} className="bg-bg">
       <Stack.Screen options={{ title: 'Friend requests' }} />
       <Animated.ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 12 }}>
+        contentContainerStyle={{
+          padding: 16,
+          paddingTop: headerHeight + 8,
+          paddingBottom: 40,
+          gap: 12,
+        }}>
         {!loading && incoming.length === 0 && (
           <Text className="font-serif-italic text-muted">
             No pending friend requests. When someone adds you, it shows up here

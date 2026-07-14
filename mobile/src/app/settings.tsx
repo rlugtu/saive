@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 
 import { authClient, clearBearerToken } from '@/client/auth';
 import { useTheme } from '@/theme/theme-provider';
@@ -18,13 +19,14 @@ const THEME_LABELS: Record<ThemeName, string> = {
 export default function SettingsScreen() {
   const { theme, setTheme } = useTheme();
   const { data: session } = authClient.useSession();
+  const headerHeight = useHeaderHeight();
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']} className="bg-bg">
       <ScrollView
         contentContainerStyle={{
           padding: 16,
-          paddingTop: 16,
+          paddingTop: headerHeight + 8,
           paddingBottom: 32,
           gap: 20,
         }}>

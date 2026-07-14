@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
 
 import { trpc } from '@/client/api';
 import { useTheme } from '@/theme/theme-provider';
@@ -31,6 +32,7 @@ export default function PollListScreen() {
     listName?: string;
   }>();
   const t = THEME_TOKENS[useTheme().theme];
+  const headerHeight = useHeaderHeight();
 
   const [polls, setPolls] = useState<Polls>([]);
   const [canCreate, setCanCreate] = useState(false);
@@ -65,9 +67,19 @@ export default function PollListScreen() {
       <FlatList
         data={polls}
         keyExtractor={(p) => p.id}
-        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 24 }}
+        contentContainerStyle={{
+          padding: 16,
+          paddingTop: headerHeight + 8,
+          gap: 12,
+          paddingBottom: 24,
+        }}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={load} tintColor={t.muted} />
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={load}
+            tintColor={t.muted}
+            progressViewOffset={headerHeight}
+          />
         }
         ListHeaderComponent={
           canCreate ? (

@@ -33,6 +33,7 @@ import {
   Geist_600SemiBold,
 } from '@expo-google-fonts/geist';
 
+import HeaderBlurBackground from '@/components/header-blur-background';
 import LoginScreen from '@/components/login-screen';
 import OnboardingScreen from '@/components/onboarding-screen';
 import { authClient } from '@/client/auth';
@@ -68,13 +69,26 @@ function ShareIntentRouter() {
 function AppStack() {
   const theme = useTheme().theme;
   const t = THEME_TOKENS[theme];
+  // Modal sheets keep a solid header — only the full-screen pushed pages get the
+  // frosted, content-scrolls-under treatment (they pad their content by the header
+  // height; a modal card has no room to scroll under a translucent bar).
+  const opaqueModal = {
+    presentation: 'modal' as const,
+    headerTransparent: false,
+    headerBackground: undefined,
+    headerStyle: { backgroundColor: t.bg },
+  };
   return (
     <>
     {/* Translucent status bar so screens render under a frosted top bar. */}
     <StatusBar style={theme.endsWith('DARK') ? 'light' : 'dark'} translucent />
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: t.bg },
+        // Frosted glass header shared with the tab screens' floating status bar, so a
+        // pushed page's top bar matches the home page. Content scrolls under it — each
+        // full-screen screen pads its scroll container by the header height.
+        headerTransparent: true,
+        headerBackground: () => <HeaderBlurBackground />,
         headerShadowVisible: false,
         headerTintColor: t.primary,
         headerTitleStyle: { fontFamily: fontFor(theme).title, color: t.ink },
@@ -86,25 +100,25 @@ function AppStack() {
       <Stack.Screen name="lists/members" options={{ title: 'Members' }} />
       <Stack.Screen
         name="lists/new"
-        options={{ presentation: 'modal', title: 'New list' }}
+        options={{ ...opaqueModal, title: 'New list' }}
       />
       <Stack.Screen
         name="lists/edit"
-        options={{ presentation: 'modal', title: 'Edit list' }}
+        options={{ ...opaqueModal, title: 'Edit list' }}
       />
       <Stack.Screen name="bookmarks/[id]" options={{ title: 'Bookmark' }} />
       <Stack.Screen
         name="bookmarks/new"
-        options={{ presentation: 'modal', title: 'New bookmark' }}
+        options={{ ...opaqueModal, title: 'New bookmark' }}
       />
       <Stack.Screen
         name="bookmarks/edit"
-        options={{ presentation: 'modal', title: 'Edit bookmark' }}
+        options={{ ...opaqueModal, title: 'Edit bookmark' }}
       />
       <Stack.Screen name="polls/index" options={{ title: 'Polls' }} />
       <Stack.Screen
         name="polls/new"
-        options={{ presentation: 'modal', title: 'New poll' }}
+        options={{ ...opaqueModal, title: 'New poll' }}
       />
       <Stack.Screen name="polls/[pollId]" options={{ title: 'Poll' }} />
       <Stack.Screen name="users/[id]" options={{ title: 'Profile' }} />
