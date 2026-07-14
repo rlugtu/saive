@@ -3,12 +3,15 @@ import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { trpc } from '@/client/api';
 import FloatingStatusBar from '@/components/floating-status-bar';
 import { cardShadow } from '@/theme/shadows';
 import { useTabBarScrollHandler } from '@/theme/tab-bar-scroll';
+import { useTheme } from '@/theme/theme-provider';
+import { THEME_TOKENS } from '@/theme/tokens';
 
 type Profile = NonNullable<Awaited<ReturnType<typeof trpc.profile.get.query>>>;
 
@@ -32,6 +35,7 @@ export default function ProfileView({
 }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -177,6 +181,27 @@ export default function ProfileView({
           </>
         )}
       </Animated.ScrollView>
+      {frostedStatusBar && profile?.friendship === 'self' && (
+        <Pressable
+          accessibilityLabel="Settings"
+          hitSlop={8}
+          onPress={() => router.push('/settings')}
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: insets.top + 12,
+            width: 36,
+            height: 36,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <Ionicons
+            name="settings-outline"
+            size={22}
+            color={THEME_TOKENS[theme].primary}
+          />
+        </Pressable>
+      )}
       {frostedStatusBar && <FloatingStatusBar />}
     </SafeAreaView>
   );

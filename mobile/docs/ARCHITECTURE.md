@@ -99,10 +99,13 @@ text), and the tint (back chevron) is `primary` — mirroring the header-less ho
 `(tabs)` group is a bottom `Tabs` navigator. Editors are presented as **modals**
 (`presentation: 'modal'`).
 
-- **Tabs** (`(tabs)/_layout.tsx`, Ionicons), left→right: **Nearby**, **Friends**, **Lists**
-  (`index`), **Profile**, **Settings** — order is deliberate so **Lists sits dead-center** of the
-  five tabs and Profile sits just before Settings (React Navigation renders tabs in `<Tabs.Screen>`
-  declaration order). Uses a
+- **Tabs** (`(tabs)/_layout.tsx`, Ionicons), left→right: **Nearby**, **Create** (＋), **Lists**
+  (`index`), **Friends**, **Profile** — order is deliberate so **Lists sits dead-center** of the
+  five tabs (React Navigation renders tabs in `<Tabs.Screen>` declaration order). **Create** is an
+  **action tab**: it has no real screen (`(tabs)/create.tsx` renders `null`); its `tabPress` is
+  intercepted in the layout and pushes the standalone new-bookmark modal (`/bookmarks/new`) instead.
+  Settings is **not** a tab — it's a pushed stack route (`src/app/settings.tsx`) reached via the
+  **gear icon on the Profile screen**. Uses a
   **custom floating glass pill** tab bar (`components/floating-tab-bar.tsx`, an Instagram-style
   content-hugging pill — icon-only, vertically centered, `expo-blur` frosted background over a
   translucent `panel` fallback, `cardShadow`) so tab content scrolls behind it. It **shrinks on
@@ -192,9 +195,11 @@ modal with `router.back()` (or `router.dismissAll()` after leaving a list).
 - **Profile** (`(tabs)/profile.tsx` own · `users/[id].tsx` others, both render
   `components/profile-view.tsx`) — a user's avatar/icon, name, "Member since", stats (public lists ·
   friends), and their public lists (`profile.get`). Others' profiles show an **Add friend** button
-  (`friends.requestByUser`); your own omits it.
-- **Settings** (`(tabs)/settings.tsx`) — account summary (name/email from the session); **theme
-  picker** (all six themes, four-swatch preview + check); sign out.
+  (`friends.requestByUser`); your own omits it but shows a **settings gear** (top-right) that pushes
+  the Settings screen.
+- **Settings** (`settings.tsx`, a pushed stack route reached via the Profile gear) — account summary
+  (name/email from the session); **theme picker** (all six themes, four-swatch preview + check);
+  sign out.
 - **Login / sign-up** (`components/login-screen.tsx`) — shown when signed out. A mode toggle switches
   between **Sign in** and **Create account** (the latter adds a Name field; password ≥ 8), mirroring
   web's `LoginForm`; Google is available in both. `signUp.email` creates the account, then the

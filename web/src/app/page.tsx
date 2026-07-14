@@ -11,7 +11,7 @@ import { SearchBar } from "@/components/search/SearchBar";
 import { BookmarkCard } from "@/components/bookmarks/BookmarkCard";
 import { PixelButton } from "@/components/ui/PixelButton";
 import { PixelBadge } from "@/components/ui/PixelBadge";
-import { Settings, MapPin, Users, User, Inbox } from "lucide-react";
+import { Plus, MapPin, Users, User, Inbox } from "lucide-react";
 
 function parseTags(raw: string | undefined): string[] {
   if (!raw) return [];
@@ -77,6 +77,11 @@ export default async function Home({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/bookmarks/new">
+            <PixelButton variant="secondary" size="sm">
+              <Plus size={14} aria-hidden /> Bookmark
+            </PixelButton>
+          </Link>
           <Link href="/nearby">
             <PixelButton variant="secondary" size="sm">
               <MapPin size={14} aria-hidden /> Near me
@@ -90,11 +95,6 @@ export default async function Home({
           <Link href={`/users/${user.id}`}>
             <PixelButton variant="secondary" size="sm">
               <User size={14} aria-hidden /> Profile
-            </PixelButton>
-          </Link>
-          <Link href="/settings">
-            <PixelButton variant="secondary" size="sm">
-              <Settings size={14} aria-hidden /> Settings
             </PixelButton>
           </Link>
           {/* <SignOutButton /> */}
@@ -152,12 +152,7 @@ export default async function Home({
         </section>
       ) : (
         <>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <CreateListPanel />
-            <Link href="/bookmarks/new">
-              <PixelButton>＋ New bookmark</PixelButton>
-            </Link>
-          </div>
+          <CreateListPanel />
           <section className="flex flex-col gap-4">
             <h2 className="font-pixel text-xl font-semibold text-primary">
               Your lists

@@ -203,15 +203,15 @@ helper — never rely on UI gating alone. Read-only public access uses `assertCa
 | `/friends` | **Friends**: add friends by email; an always-visible **Requests** link → `/friends/requests`; friends list — each row expands to **Edit** (remove friend) or **Add** (multiselect of your lists + role → send join requests) |
 | `/friends/requests` | **Friend requests**: all incoming friend requests, accept/decline (empty state when none) |
 | `/nearby` | **Near me**: find geocoded bookmarks within a chosen radius of your current location, closest→farthest |
-| `/bookmarks/new` | **New bookmark**: standalone create flow; pick/create one or more target lists and add the bookmark independently to each |
+| `/bookmarks/new` | **New bookmark**: standalone create flow; pick/create one or more target lists and add the bookmark independently to each. Reached from a **＋ Bookmark** item in the primary nav (web home header · mobile tab bar) |
 | `/lists/[id]` | Bookmarks in a list; filter/search within; list-level comments; invite UI (owner) |
 | `/lists/[id]/bookmarks/[bid]` | Bookmark detail: 8-bit layout, tag pills, comments newest-first; **← Back** returns to the previous page (list / nearby / search), falling back to the list on direct load |
 | `/lists/[id]/polls` | Polls in a list (newest first, with status + counts); **New poll** for collaborators+ |
 | `/lists/[id]/polls/new` | Create a poll: fields + a searchable/tag-filterable bookmark option picker (≥2) |
 | `/lists/[id]/polls/[pollId]` | Poll detail: **Vote**/**Results** toggle; edit/delete for the creator or list owner |
 | `/lists/[id]/polls/[pollId]/edit` | Edit a poll (creator or list owner); reconciles options |
-| `/users/[id]` | **Profile**: a user's identity (avatar/icon, name, member-since), stats (public lists · friends), their **public lists**, and an Add-friend action on others' profiles. Your own profile is linked from a **Profile** button in the home header (before Settings). |
-| `/settings` | Edit profile/theme/icon; manage/leave shared lists; pending requests |
+| `/users/[id]` | **Profile**: a user's identity (avatar/icon, name, member-since), stats (public lists · friends), their **public lists**, and an Add-friend action on others' profiles. Your own profile is linked from a **Profile** item in the primary nav; on your own profile a **settings gear** opens `/settings`. |
+| `/settings` | Edit profile/theme/icon; manage/leave shared lists; pending requests. Reached via the **gear icon on your own profile** (no longer a primary-nav item). |
 | `/invite/[token]` | Accept an invite |
 
 **Home search bar behavior** (unified control):

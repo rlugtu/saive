@@ -75,7 +75,7 @@ step is hidden behind the existing "Fetching link…" overlay while the website 
 
 ## Verification
 1. `npm run lint` + `npm run build` (green).
-2. `npm run dev` → Home → **＋ New bookmark** (and also test the list-page create panel):
+2. `npm run dev` → Home → **＋ Bookmark** nav item (and also test the list-page create panel):
    - In the Location field, search a business with a website (e.g. a known restaurant) and pick
      it → name fills with the business name, the location fills with its address (pin set), the
      URL fills with its website, and description/images populate from the unfurl (brief "Fetching

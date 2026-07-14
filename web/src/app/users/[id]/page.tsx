@@ -6,7 +6,7 @@ import { sendFriendRequestToUser } from "@/lib/actions/friends";
 import { PixelButton } from "@/components/ui/PixelButton";
 import { PixelBadge } from "@/components/ui/PixelBadge";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { ArrowLeft, Globe } from "lucide-react";
+import { ArrowLeft, Globe, Settings } from "lucide-react";
 
 export default async function UserProfilePage({
   params,
@@ -33,9 +33,9 @@ export default async function UserProfilePage({
           </PixelButton>
         </Link>
         {friendship === "self" && (
-          <Link href="/settings">
+          <Link href="/settings" aria-label="Settings" title="Settings">
             <PixelButton variant="secondary" size="sm">
-              Edit profile
+              <Settings size={14} aria-hidden />
             </PixelButton>
           </Link>
         )}

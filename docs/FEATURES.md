@@ -260,11 +260,12 @@ display name, real name, "Member since {year}", a stats row (**public lists · f
 **Add friend** button sends a request; your own profile omits it. Data comes from `profile.get`
 (identity + public lists + friend count + viewer↔target friendship state); the add-friend action is
 `friends.requestByUser`.
-**Web.** `/users/[id]` page; linked from a **Profile** button in the home header (before Settings),
-from a list's "owned by {owner}", and from friend rows.
+**Web.** `/users/[id]` page; linked from a **Profile** item in the home-header nav, from a list's
+"owned by {owner}", and from friend rows. On your own profile a **settings gear** opens `/settings`.
 **Mobile.** A **Profile** tab (own profile, `src/app/(tabs)/profile.tsx`) plus a pushed
 `src/app/users/[id].tsx` for others — both render the shared `components/profile-view.tsx`. Reached
-from the tab and from friend rows.
+from the tab and from friend rows. On your own profile a **settings gear** (top-right) opens the
+Settings screen.
 **Differences.** None functionally; layout follows each app's theme.
 
 ### Comments
@@ -296,8 +297,10 @@ an emphasized distance and up to 3 tag pills under the list label.
 
 ### Profile & settings
 **Description.** Edit your profile (names, birthday, emoji icon), pick a theme, sign out.
-**Web.** `/settings` → `ProfileForm`; `profile.update`.
-**Mobile.** `src/app/(tabs)/settings.tsx`; theme persisted to secure-store, applied locally.
+**Web.** `/settings` → `ProfileForm`; `profile.update`. Reached via the settings gear on your own
+profile (`/users/[id]`).
+**Mobile.** `src/app/settings.tsx` (a pushed stack route, no longer a tab); reached via the settings
+gear on the Profile screen. Theme persisted to secure-store, applied locally.
 **Differences.** None.
 
 ### Themes

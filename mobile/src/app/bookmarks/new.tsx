@@ -10,7 +10,7 @@ type Memberships = Awaited<ReturnType<typeof trpc.lists.mine.query>>;
 /**
  * Create a bookmark. Two modes:
  *  - with a `listId` param (in-list "Add" flow): saves one bookmark into that list.
- *  - without one (standalone, from the home "＋ Bookmark" button): shows a list picker and writes an
+ *  - without one (standalone, from the "＋" Create tab): shows a list picker and writes an
  *    independent bookmark into each selected / newly-created list via `bookmarks.createInLists`.
  */
 export default function NewBookmarkScreen() {
