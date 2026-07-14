@@ -14,6 +14,7 @@ import {
   useLocalSearchParams,
   useRouter,
 } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
 
 import { trpc } from '@/client/api';
 import { authClient } from '@/client/auth';
@@ -31,6 +32,7 @@ export default function MembersScreen() {
   const myId = session?.user?.id;
   const { theme } = useTheme();
   const muted = THEME_TOKENS[theme].muted;
+  const headerHeight = useHeaderHeight();
 
   const [members, setMembers] = useState<Members>([]);
   const [invites, setInvites] = useState<Invites>([]);
@@ -126,7 +128,7 @@ export default function MembersScreen() {
   return (
     <ScrollView
       className="flex-1 bg-bg"
-      contentContainerStyle={{ padding: 16, gap: 20 }}>
+      contentContainerStyle={{ padding: 16, paddingTop: headerHeight + 8, gap: 20 }}>
       <Stack.Screen options={{ title: 'Members' }} />
 
       {!loaded && <ActivityIndicator />}

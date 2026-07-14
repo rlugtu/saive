@@ -46,3 +46,4 @@ example
 *.ipa
 *.apk
 *.aab
+build/

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { trpc } from '@/client/api';
@@ -29,6 +30,7 @@ export default function PollDetailScreen() {
   const router = useRouter();
   const { pollId } = useLocalSearchParams<{ pollId: string }>();
   const t = THEME_TOKENS[useTheme().theme];
+  const headerHeight = useHeaderHeight();
   const myId = authClient.useSession().data?.user?.id;
 
   const [poll, setPoll] = useState<Poll | null>(null);
@@ -72,7 +74,7 @@ export default function PollDetailScreen() {
     return (
       <View className="flex-1 bg-bg">
         <Stack.Screen options={{ title: 'Poll' }} />
-        <View className="gap-3 p-4">
+        <View className="gap-3 p-4" style={{ paddingTop: headerHeight + 8 }}>
           <Skeleton height={28} />
           <Skeleton height={40} />
           <Skeleton height={56} />
@@ -156,7 +158,13 @@ export default function PollDetailScreen() {
   return (
     <View className="flex-1 bg-bg">
       <Stack.Screen options={{ title: poll.name }} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: 16,
+          paddingTop: headerHeight + 8,
+          gap: 16,
+          paddingBottom: 40,
+        }}>
         <View className="gap-1">
           <Text className="font-serif text-2xl text-ink">{poll.name}</Text>
           {poll.description ? (

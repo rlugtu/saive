@@ -27,11 +27,15 @@ export default function ProfileView({
   userId,
   edges = ['left', 'right'],
   frostedStatusBar = false,
+  contentTopInset,
 }: {
   userId?: string;
   edges?: ('top' | 'left' | 'right' | 'bottom')[];
   /** Own-profile tab: render content under a frosted status bar (no native header). */
   frostedStatusBar?: boolean;
+  /** Pushed stack screen (another user's profile): top padding to clear the frosted
+   *  navigation header, so content scrolls under it like the tab screens do. */
+  contentTopInset?: number;
 }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -80,7 +84,8 @@ export default function ProfileView({
         scrollEventThrottle={16}
         contentContainerStyle={{
           padding: 16,
-          paddingTop: frostedStatusBar ? insets.top + 16 : 16,
+          paddingTop:
+            contentTopInset ?? (frostedStatusBar ? insets.top + 16 : 16),
           paddingBottom: 120,
           gap: 20,
         }}>

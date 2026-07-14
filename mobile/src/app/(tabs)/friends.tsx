@@ -107,22 +107,9 @@ export default function FriendsScreen() {
         }}>
         <Text className="font-serif text-3xl text-ink">Friends</Text>
 
-        {/* Requests, compact and self-sized so they sit just under the header
-            rather than stretching the full width. */}
-        <View className="flex-row gap-3">
-          <Pressable
-            onPress={() => router.push('/friend-requests')}
-            className="flex-row items-center gap-1.5 rounded-skin border-skin border-border bg-panel px-3 py-2">
-            <Ionicons name="file-tray-outline" size={16} color={muted} />
-            <Text className="font-sans-medium text-sm text-ink">Requests</Text>
-            {data.incoming.length > 0 && (
-              <View className="rounded-full bg-primary px-2 py-0.5">
-                <Text className="font-sans-semibold text-xs text-primary-ink">
-                  {data.incoming.length}
-                </Text>
-              </View>
-            )}
-          </Pressable>
+        {/* Pending and Requests pushed to opposite edges so they read as a pair of
+            balanced actions rather than a left-packed cluster. */}
+        <View className="flex-row items-center justify-between">
           <Pressable
             onPress={() => router.push('/pending-requests')}
             className="flex-row items-center gap-1.5 rounded-skin border-skin border-border bg-panel px-3 py-2">
@@ -132,6 +119,19 @@ export default function FriendsScreen() {
               <View className="rounded-full bg-primary px-2 py-0.5">
                 <Text className="font-sans-semibold text-xs text-primary-ink">
                   {data.outgoing.length}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/friend-requests')}
+            className="flex-row items-center gap-1.5 rounded-skin border-skin border-border bg-panel px-3 py-2">
+            <Ionicons name="file-tray-outline" size={16} color={muted} />
+            <Text className="font-sans-medium text-sm text-ink">Requests</Text>
+            {data.incoming.length > 0 && (
+              <View className="rounded-full bg-primary px-2 py-0.5">
+                <Text className="font-sans-semibold text-xs text-primary-ink">
+                  {data.incoming.length}
                 </Text>
               </View>
             )}

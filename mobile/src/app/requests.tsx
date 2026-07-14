@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { Stack, useFocusEffect } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
 
 import { trpc } from '@/client/api';
 import { cardShadow } from '@/theme/shadows';
@@ -11,6 +12,7 @@ type Requests = Awaited<ReturnType<typeof trpc.sharing.incomingRequests.query>>;
 
 /** All open list-join (collab) requests addressed to the user: approve or reject. */
 export default function RequestsScreen() {
+  const headerHeight = useHeaderHeight();
   const [requests, setRequests] = useState<Requests>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +40,12 @@ export default function RequestsScreen() {
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']} className="bg-bg">
       <Stack.Screen options={{ title: 'List requests' }} />
       <Animated.ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 12 }}>
+        contentContainerStyle={{
+          padding: 16,
+          paddingTop: headerHeight + 8,
+          paddingBottom: 40,
+          gap: 12,
+        }}>
         {!loading && requests.length === 0 && (
           <Text className="font-serif-italic text-muted">
             No open list requests. When someone invites you to a list, it shows

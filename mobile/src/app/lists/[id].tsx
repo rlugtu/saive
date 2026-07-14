@@ -7,6 +7,7 @@ import {
   useRouter,
 } from 'expo-router';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Ionicons } from '@expo/vector-icons';
 
 import { trpc } from '@/client/api';
@@ -25,6 +26,7 @@ export default function ListScreen() {
   const router = useRouter();
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const t = THEME_TOKENS[useTheme().theme];
+  const headerHeight = useHeaderHeight();
   const sheetRef = useRef<BottomSheetModal>(null);
 
   const [bookmarks, setBookmarks] = useState<Bookmarks>([]);
@@ -127,7 +129,12 @@ export default function ListScreen() {
       <FlatList
         data={shown}
         keyExtractor={(b) => b.id}
-        contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 24 }}
+        contentContainerStyle={{
+          padding: 16,
+          paddingTop: headerHeight + 8,
+          gap: 16,
+          paddingBottom: 24,
+        }}
         ListHeaderComponent={
           <View className="gap-3 pb-1">
             {description.trim() !== '' && (

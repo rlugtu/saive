@@ -92,12 +92,17 @@ Everything else hot-reloads normally against the dev client.
 
 **expo-router** (file-based, `src/app/`, `experiments.typedRoutes`). Root `_layout.tsx` renders
 `AppStack` — a `Stack` extracted into a child of the app `ThemeProvider` so its `screenOptions` can
-read the active palette. Pushed screens use a **seamless "floating" header**: the header background
-is the page `bg` token with no shadow (`headerShadowVisible: false`), the title is `ink` in
-Newsreader, the back button is chevron-only (`headerBackButtonDisplayMode: 'minimal'` — no route-name
-text), and the tint (back chevron) is `primary` — mirroring the header-less homepage look. The
-`(tabs)` group is a bottom `Tabs` navigator. Editors are presented as **modals**
-(`presentation: 'modal'`).
+read the active palette. Full-screen pushed screens use a **frosted glass header** that matches the
+tab screens' floating status bar: `headerTransparent: true` + a `headerBackground` rendering
+`components/header-blur-background.tsx` (the same `expo-blur` `BlurView` + translucent `bg` tint the
+floating status bar uses — one shared surface, so home and pushed pages read identically). There's no
+shadow (`headerShadowVisible: false`), the title is `ink` in Newsreader, the back button is
+chevron-only (`headerBackButtonDisplayMode: 'minimal'` — no route-name text), and the tint (back
+chevron) is `primary`. Because the header is transparent, each full-screen screen **pads its scroll
+container by `useHeaderHeight() + 8`** so content scrolls *under* the frosted bar. The `(tabs)` group
+is a bottom `Tabs` navigator. Editors are presented as **modals** (`presentation: 'modal'`) and keep
+a **solid** header (they override `headerTransparent` back off — a modal card has no room to scroll
+under a translucent bar).
 
 - **Tabs** (`(tabs)/_layout.tsx`, Ionicons), left→right: **Nearby**, **Create** (＋), **Lists**
   (`index`), **Friends**, **Profile** — order is deliberate so **Lists sits dead-center** of the
@@ -114,11 +119,13 @@ text), and the tint (back chevron) is `primary` — mirroring the header-less ho
   `Animated.FlatList`/`Animated.ScrollView` feeds `useTabBarScrollHandler`). Each scroll container
   pads its bottom to clear the pill. (Real blur needs a native build; dev shows the fallback.)
 - **Frosted status bar.** Tab screens drop the `top` safe-area edge, pad their scroll content by the
-  top inset, and render `components/floating-status-bar.tsx` — a top-pinned `expo-blur` `BlurView`
-  (mirroring the tab bar) so content scrolls **under** a translucent, blurred status bar instead of a
+  top inset, and render `components/floating-status-bar.tsx` — a top-pinned strip whose glass surface
+  is `components/header-blur-background.tsx` (an `expo-blur` `BlurView` + translucent `bg` tint,
+  mirroring the tab bar) so content scrolls **under** a translucent, blurred status bar instead of a
   solid bg strip. A theme-aware `expo-status-bar` `<StatusBar>` (translucent, light/dark by theme)
-  lives in the root `AppStack`. Pushed screens keep their native header (they already occupy that
-  space with a title).
+  lives in the root `AppStack`. Full-screen **pushed** screens get the same frosted look via the
+  transparent navigation header described above (same `header-blur-background` surface), so every
+  page's top bar is consistent.
 - **Stack screens**: `lists/[id]` (list detail), `lists/members`, `bookmarks/[id]` (detail),
   `users/[id]` (another user's profile, pushed from friend rows), `requests` (incoming list-join
   requests), `friend-requests` (incoming friend requests), `pending-requests` (outgoing friend
@@ -145,10 +152,11 @@ modal with `router.back()` (or `router.dismissAll()` after leaving a list).
   (`sharing.incomingRequests`) with approve/reject (`approveRequest`/`rejectRequest`).
 - **Friend requests** (`friend-requests.tsx`) — all incoming friend requests (`friends.list().incoming`)
   with accept/decline (`friends.accept`/`friends.decline`). Reached from a compact **Requests** pill
-  just below the Friends header.
+  below the Friends header — the trailing pill in a `justify-between` row.
 - **Pending requests** (`pending-requests.tsx`) — outgoing friend requests you've sent and that are
   still unanswered (`friends.list().outgoing`), each with a **Cancel** action to withdraw
-  (`friends.cancel`). Reached from a **Pending** pill beside the Requests pill on the Friends screen.
+  (`friends.cancel`). Reached from a **Pending** pill on the Friends screen — the **leading** pill,
+  pushed to the opposite edge from the Requests pill.
 - **List detail** (`lists/[id].tsx`) — bookmark feed (`bookmarks.forList`) as `PhotoCard`s (first
   image, name, description, rating stars, tag pills). The feed always shows a static thumbnail, never
   a player. When the extracted image is missing **or fails to load** (reel `og:image`s are often
