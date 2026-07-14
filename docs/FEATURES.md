@@ -85,7 +85,7 @@ with a link or a location.
 | Nearby / geolocation | ⚠️ | ⚠️ | Web browser geo (0.5–10 mi) · Mobile native GPS (1–25 mi) |
 | Profile & settings | ✅ | ✅ | Theme picker (all 6 themes) |
 | Themes | ✅ | ✅ | All 6 both; **default differs** (web Modern Light · mobile Journal Light) |
-| Native share intent | ➖ | ✅ | Mobile-only (OS share sheet → new bookmark) |
+| Native share extension | ➖ | ✅ | Mobile-only, iOS (save a bookmark inside the OS share sheet) |
 | PWA install | ✅ | ➖ | Web-only (mobile is a native app) |
 | AI caption extraction | ✅ | ➖ | Web-only (`comprehend.caption`, Claude-backed) |
 
@@ -320,13 +320,15 @@ Default **Journal Light**.
 **Differences.** Same six themes on both; the **default** differs (web Modern Light, mobile Journal
 Light).
 
-### Native share intent
-**Description.** Share a URL into Klect from any other app's native share sheet to start a new
-bookmark.
-**Mobile.** `expo-share-intent` (iOS Share Extension + Android intent filter) → `/bookmarks/new?url=`
-→ auto-autofill; queues the intent through login if signed out. Requires the custom dev build.
+### Native share extension
+**Description.** Share a URL into Klect from any other app's native share sheet to save a bookmark —
+filled out and saved **inside the share sheet**, without opening the app.
+**Mobile.** `expo-share-extension` (iOS only) renders the full `BookmarkForm` + list picker in the
+share sheet (auto-autofill via `metadata.fetch`), saving through `bookmarks.createInLists`. Auth uses
+a bearer token read from the shared keychain; if none is present it prompts to open Klect and sign in.
+Requires the custom dev build.
 **Web.** ➖ Not possible — no OS-level share sheet.
-**Differences.** **Mobile-only.**
+**Differences.** **Mobile-only (iOS).** Android share-to-app is not currently supported.
 
 ### PWA install
 **Description.** Install the web app to the home screen with an offline fallback page.

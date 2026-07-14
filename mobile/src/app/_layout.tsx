@@ -1,12 +1,8 @@
 import '@/global.css';
 
 import { useEffect } from 'react';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import {
-  ShareIntentProvider,
-  useShareIntentContext,
-} from 'expo-share-intent';
 import {
   DarkTheme,
   DefaultTheme,
@@ -41,25 +37,6 @@ import { ThemeProvider as AppThemeProvider, useTheme } from '@/theme/theme-provi
 import { fontFor, THEME_TOKENS } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
-
-/**
- * Routes an incoming share intent (a URL shared into Klect from another app) to the
- * standalone new-bookmark flow, prefilled with the shared URL. Rendered only inside the
- * authenticated subtree, so a share received while logged out waits until after login.
- */
-function ShareIntentRouter() {
-  const router = useRouter();
-  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
-
-  useEffect(() => {
-    if (!hasShareIntent) return;
-    const url = shareIntent.webUrl ?? shareIntent.text ?? undefined;
-    if (url) router.push({ pathname: '/bookmarks/new', params: { url } });
-    resetShareIntent();
-  }, [hasShareIntent, shareIntent, router, resetShareIntent]);
-
-  return null;
-}
 
 /**
  * The authenticated navigation stack. Lives inside <AppThemeProvider> so it can read the active
@@ -148,8 +125,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <ShareIntentProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <AppThemeProvider>
         <NavThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <BottomSheetModalProvider>
@@ -164,15 +140,11 @@ export default function RootLayout() {
                 onDone={() => refetch()}
               />
             ) : (
-              <>
               <AppStack />
-              <ShareIntentRouter />
-              </>
             )}
           </BottomSheetModalProvider>
         </NavThemeProvider>
       </AppThemeProvider>
     </GestureHandlerRootView>
-    </ShareIntentProvider>
   );
 }

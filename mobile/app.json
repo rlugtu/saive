@@ -50,15 +50,18 @@
         }
       ],
       [
-        "expo-share-intent",
+        "expo-share-extension",
         {
-          "iosActivationRules": {
-            "NSExtensionActivationSupportsWebURLWithMaxCount": 1
-          },
-          "androidIntentFilters": [
-            "text/*"
+          "activationRules": [
+            { "type": "url", "max": 1 },
+            { "type": "text" }
           ],
-          "iosAppGroupIdentifier": "group.com.klect.app"
+          "backgroundColor": { "red": 0, "green": 0, "blue": 0, "alpha": 0 },
+          "excludedPackages": [
+            "expo-dev-client",
+            "expo-splash-screen",
+            "expo-updates"
+          ]
         }
       ],
       "expo-video",

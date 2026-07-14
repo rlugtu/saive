@@ -15,8 +15,8 @@ Built on **Expo SDK 54** (RN 0.81, React 19, the React Compiler enabled via
 `experiments.reactCompiler`). It **requires a custom dev build** — it is **not** an Expo Go app
 anymore, because three features add native code that Expo Go can't load:
 
-- **`expo-share-intent`** — a native iOS Share Extension + Android intent-filter (share a URL into
-  Klect from any app).
+- **`expo-share-extension`** — a native iOS Share Extension that renders a React save UI *inside*
+  the share sheet (save a shared URL as a bookmark without opening the app; iOS only).
 - **`expo-video`** — the native player for direct media files in the bookmark video player.
 - **`react-native-webview`** — hosts provider iframes (YouTube/Vimeo/TikTok/Instagram) in that same
   player.
@@ -78,6 +78,12 @@ Everything else hot-reloads normally against the dev client.
     `cookie` query param on the `klect://` deep-link redirect — so the resolver falls back to the
     session-token value parsed out of `authClient.getCookie()` (the stored cookie), which the
     `bearer()` plugin accepts (incl. URL-encoded). Both paths must stay covered.
+  - **Shared-keychain token for the share extension.** `klect_bearer` is stored/read with
+    `SecureStore`'s `accessGroup: "group.com.klect.app"` (`SHARED_KEYCHAIN_ACCESS_GROUP` in
+    `client/auth.ts`) — an App Group iOS also treats as a keychain access group — so the share
+    extension's separate process can read it. `resolveBearerToken()` mirrors the OAuth cookie token
+    into that keychain on resolve (de-duped), since OAuth never populates the in-memory token. The
+    extension has no cookie/memory state, so `readStoredBearerToken()` is its only token source.
   - **Google OAuth deep-link gotcha.** The social flow only returns to the app if the whole OAuth
     round-trip stays on the origin the app calls. The deployed web app's **`BETTER_AUTH_URL` must
     equal `EXPO_PUBLIC_API_URL`** (`https://klect.vercel.app`), and Google Cloud Console must list
@@ -257,12 +263,17 @@ modal with `router.back()` (or `router.dismissAll()` after leaving a list).
   themes are local (`secure-store`) and include Journal, but the server `Theme` enum is only
   Pixel/Modern — a Journal pick is `coerceTheme`d to Pixel server-side (affecting web only; mobile
   keeps its local theme).
-- **Share intent** (`expo-share-intent`) — Klect appears in other apps' native share sheets (web
-  URLs; the iOS activation rule is `NSExtensionActivationSupportsWebURLWithMaxCount: 1`). `_layout.tsx`
-  wraps the app in `ShareIntentProvider`; a `ShareIntentRouter` in the **authenticated** subtree
-  routes an incoming URL (`webUrl ?? text`) to the standalone New-bookmark flow (`/bookmarks/new?url=…`),
-  so a share received while signed out waits until after login. Requires the custom dev build; config
-  lives in `app.json` under the `expo-share-intent` plugin (+ `+native-intent.tsx`, above).
+- **Share extension** (`expo-share-extension`, **iOS only**) — Klect appears in other apps' native
+  share sheets (web URLs / text; activation rules in `app.json`). Instead of opening the app, the
+  extension **renders a React save UI right in the share sheet** (`index.share.tsx` registers the
+  `shareExtension` root → `src/share-extension.tsx`). It reuses the shared `BookmarkForm` + `ListPicker`
+  (full editor, autofill, multi-list create) and saves via `bookmarks.createInLists`, then dismisses
+  with `close()`. The extension is a **separate process** with no in-memory token or better-auth
+  cookie, so it authenticates by reading the bearer token from the **shared keychain** (App Group
+  `group.com.klect.app`, which iOS also treats as a keychain access group — see Auth). If no token is
+  present (e.g. an OAuth session never surfaced to the shared keychain, or signed out) it shows an
+  "Open Klect" prompt (`openHostApp`), since the extension can't run the OAuth deep-link flow. Metro
+  builds the extension as a second bundle via `withShareExtension`; requires the custom dev build.
 
 ### The shared `BookmarkForm` (`components/bookmark-form.tsx`)
 
@@ -333,10 +344,12 @@ differ, screen structure is shared.
 
 ## Layout & providers
 
-Root `_layout.tsx` wraps the tree in `ShareIntentProvider` → `GestureHandlerRootView` → app
-`ThemeProvider` → `@react-navigation/native` theme → `BottomSheetModalProvider`, holds the native
-splash until the Journal fonts load, and gates the tree on the auth session (blank / `LoginScreen` /
-`Stack` + `ShareIntentRouter`).
+Root `_layout.tsx` wraps the tree in `GestureHandlerRootView` → app `ThemeProvider` →
+`@react-navigation/native` theme → `BottomSheetModalProvider`, holds the native splash until the
+Journal fonts load, and gates the tree on the auth session (blank / `LoginScreen` / `Stack`). The
+**share extension** bundle (`src/share-extension.tsx`) replicates the minimum of this tree it needs —
+`SafeAreaProvider` → `GestureHandlerRootView` → app `ThemeProvider` — without expo-router or the
+bottom-sheet provider.
 
 ## Conventions & gotchas
 

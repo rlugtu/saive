@@ -1,7 +1,6 @@
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import type { AppRouter } from "@web/server/trpc/router";
-import * as SecureStore from "expo-secure-store";
-import { resolveBearerToken, API_URL } from "./auth";
+import { resolveBearerToken, readStoredBearerToken, API_URL } from "./auth";
 
 /**
  * Typed tRPC client for web's API. `AppRouter` is a **type-only** import from
@@ -19,10 +18,10 @@ export const trpc = createTRPCClient<AppRouter>({
       url: `${API_URL}/api/trpc`,
       async headers() {
         // Resolve from the captured token or the stored session cookie (covers both the
-        // email/password and Google OAuth sign-in paths); fall back to a direct SecureStore
-        // read for the cold-start race before the in-memory token has hydrated.
-        const token =
-          resolveBearerToken() ?? (await SecureStore.getItemAsync("klect_bearer"));
+        // email/password and Google OAuth sign-in paths); fall back to the shared-keychain read
+        // for the cold-start race before the in-memory token has hydrated. In the Share Extension's
+        // fresh process there is no cache/cookie, so that stored read is the only token source.
+        const token = resolveBearerToken() ?? (await readStoredBearerToken());
         return token ? { Authorization: `Bearer ${token}` } : {};
       },
     }),
