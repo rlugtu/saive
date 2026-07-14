@@ -1,12 +1,9 @@
-import { Pressable, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated from 'react-native-reanimated';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authClient, clearBearerToken } from '@/client/auth';
-import FloatingStatusBar from '@/components/floating-status-bar';
 import { useTheme } from '@/theme/theme-provider';
 import { THEME_TOKENS, type ThemeName } from '@/theme/tokens';
-import { useTabBarScrollHandler } from '@/theme/tab-bar-scroll';
 
 const THEME_LABELS: Record<ThemeName, string> = {
   JOURNAL_LIGHT: 'Journal · Light',
@@ -17,25 +14,20 @@ const THEME_LABELS: Record<ThemeName, string> = {
   MODERN_DARK: 'Modern · Dark',
 };
 
+/** Pushed stack route, reached via the gear icon on the Profile screen. */
 export default function SettingsScreen() {
   const { theme, setTheme } = useTheme();
   const { data: session } = authClient.useSession();
-  const insets = useSafeAreaInsets();
-  const onScroll = useTabBarScrollHandler();
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']} className="bg-bg">
-      <Animated.ScrollView
-        onScroll={onScroll}
-        scrollEventThrottle={16}
+      <ScrollView
         contentContainerStyle={{
           padding: 16,
-          paddingTop: insets.top + 16,
-          paddingBottom: 120,
+          paddingTop: 16,
+          paddingBottom: 32,
           gap: 20,
         }}>
-        <Text className="text-2xl font-bold text-ink">Settings</Text>
-
         <View className="gap-2">
           <Text className="text-sm uppercase text-muted">Account</Text>
           <View className="rounded-skin border-skin border-border bg-panel p-3">
@@ -84,8 +76,7 @@ export default function SettingsScreen() {
           }}>
           <Text className="font-semibold text-danger">Sign out</Text>
         </Pressable>
-      </Animated.ScrollView>
-      <FloatingStatusBar />
+      </ScrollView>
     </SafeAreaView>
   );
 }

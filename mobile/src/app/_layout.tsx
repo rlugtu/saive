@@ -108,6 +108,7 @@ function AppStack() {
       />
       <Stack.Screen name="polls/[pollId]" options={{ title: 'Poll' }} />
       <Stack.Screen name="users/[id]" options={{ title: 'Profile' }} />
+      <Stack.Screen name="settings" options={{ title: 'Settings' }} />
       <Stack.Screen name="requests" options={{ title: 'List requests' }} />
       <Stack.Screen name="friend-requests" options={{ title: 'Friend requests' }} />
     </Stack>

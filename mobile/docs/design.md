@@ -27,7 +27,7 @@ its own palette + type + component treatment. Ships light + dark, and is the def
   link autofill, location search, and (standalone flow) the multi-list picker
 - **Nearby** (`(tabs)/nearby.tsx`) — compact rows (name, emphasized distance, list label, up
   to 3 tag pills), full-width evenly-spaced radius chips
-- **Settings** (`(tabs)/settings.tsx`) — account, theme picker, sign out · **Login**, **Members**
+- **Settings** (`settings.tsx`, pushed route via the Profile gear) — account, theme picker, sign out · **Login**, **Members**
 
 ## Color tokens — `JOURNAL_LIGHT` / `JOURNAL_DARK`
 
