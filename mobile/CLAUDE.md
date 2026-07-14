@@ -40,12 +40,16 @@ only palette/skin/font differ, the screen *structure* is shared. Style with the 
 `theme/shadows.ts`; tag pills use `components/tag-pill.tsx`.
 
 ## Stack
-Expo SDK 54 (RN 0.81, React 19), expo-router (file-based routes in `src/app`; standard `Tabs`),
-react-native-reanimated 4 + gesture-handler, `expo-image`, **NativeWind**, `@trpc/client`,
+Expo SDK 54 (RN 0.81, React 19), expo-router (file-based routes in `src/app`; the `(tabs)` group is a
+bottom-positioned **swipeable** `@react-navigation/material-top-tabs` pager on
+**`react-native-pager-view`**, wired via `withLayoutContext`),
+react-native-reanimated 4 + gesture-handler, **`expo-haptics`** (tab-press feedback), `expo-image`,
+**NativeWind**, `@trpc/client`,
 `@better-auth/expo`, **`@gorhom/bottom-sheet`** (tag filter),
 **`react-native-reorderable-list`** (drag-to-reorder lists on home; JS-only, builds on reanimated +
 gesture-handler), **expo-font + `@expo-google-fonts/*`**
-(Newsreader, Work Sans), `@expo/vector-icons` (tab icons), **`expo-blur`** (frosted glass behind
+(Newsreader, Work Sans), `@expo/vector-icons` (tab icons — outline/filled pairs crossfaded by swipe
+position in the custom tab bar), **`expo-blur`** (frosted glass behind
 the floating tab bar **and the status bar** — needs a native build to render; the pushed-screen
 header + status bar mask it with **`expo-linear-gradient` + `@react-native-masked-view/masked-view`**
 so the blur fades out gradually with no hard line), `expo-location`,

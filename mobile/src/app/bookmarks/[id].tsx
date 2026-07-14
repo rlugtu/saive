@@ -38,7 +38,7 @@ function mapsUrl(location: string, lat: number | null, lon: number | null) {
 
 export default function BookmarkScreen() {
   const router = useRouter();
-  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
+  const { id } = useLocalSearchParams<{ id: string; name?: string }>();
   const headerHeight = useHeaderHeight();
   const t = THEME_TOKENS[useTheme().theme];
   const [data, setData] = useState<BookmarkResult>(null);
@@ -96,7 +96,7 @@ export default function BookmarkScreen() {
       contentContainerStyle={{ padding: 16, paddingTop: headerHeight + 8, gap: 12 }}>
       <Stack.Screen
         options={{
-          title: name ?? b?.name ?? 'Bookmark',
+          headerTitle: () => null,
           headerRight: () =>
             b ? (
               <Pressable

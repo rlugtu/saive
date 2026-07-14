@@ -96,7 +96,7 @@ export default function ListScreen() {
     <View className="flex-1 bg-bg">
       <Stack.Screen
         options={{
-          title: name ?? 'List',
+          headerTitle: () => null,
           headerRight: () =>
             canEdit ? (
               <Pressable

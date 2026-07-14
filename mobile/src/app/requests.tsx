@@ -38,7 +38,7 @@ export default function RequestsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']} className="bg-bg">
-      <Stack.Screen options={{ title: 'List requests' }} />
+      <Stack.Screen options={{ headerTitle: () => null }} />
       <Animated.ScrollView
         contentContainerStyle={{
           padding: 16,
