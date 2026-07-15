@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
@@ -65,8 +72,16 @@ export default function NearbyScreen() {
     'Tap a distance to find nearby bookmarks.',
   );
   const [busy, setBusy] = useState(false);
+  // Off by default → all bookmarks; on → only those the user hasn't visited.
+  const [hideVisited, setHideVisited] = useState(false);
   // Briefly ringed after its pin is tapped, to tie the pin to its list row.
   const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  // Filtered view shared by the map pins and the list so their numbering matches.
+  const visibleItems = useMemo(
+    () => (hideVisited ? items.filter((it) => !it.card.visited) : items),
+    [items, hideVisited],
+  );
 
   const cameraRef = useRef<Camera>(null);
   const sheetRef = useRef<BottomSheet>(null);
@@ -193,7 +208,7 @@ export default function NearbyScreen() {
         attributionPosition={{ top: 8, left: 96 }}>
         <Camera ref={cameraRef} />
         {coords && <UserLocation visible />}
-        {items.map((item, index) => {
+        {visibleItems.map((item, index) => {
           const active = highlightId === item.card.id;
           return (
             <MarkerView
@@ -278,7 +293,17 @@ export default function NearbyScreen() {
         backgroundStyle={{ backgroundColor: t.panel }}
         handleIndicatorStyle={{ backgroundColor: t.muted }}>
         <View style={styles.sheetHeader}>
-          <Text style={[styles.sheetTitle, { color: t.ink }]}>Near me</Text>
+          <View style={styles.sheetTitleRow}>
+            <Text style={[styles.sheetTitle, { color: t.ink }]}>Near me</Text>
+            <View style={styles.toggleWrap}>
+              <Text style={{ color: t.muted, fontSize: 13 }}>Show only unvisited</Text>
+              <Switch
+                value={hideVisited}
+                onValueChange={setHideVisited}
+                trackColor={{ true: t.primary }}
+              />
+            </View>
+          </View>
           {locationLabel && (
             <Text style={{ color: t.muted, fontSize: 13 }} numberOfLines={1}>
               📍 {locationLabel}
@@ -288,7 +313,7 @@ export default function NearbyScreen() {
         </View>
         <BottomSheetFlatList
           ref={listRef}
-          data={items}
+          data={visibleItems}
           keyExtractor={(it) => `${it.listId}:${it.card.id}`}
           getItemLayout={(_, index) => ({
             length: ITEM_HEIGHT,
@@ -416,6 +441,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
     gap: 2,
+  },
+  sheetTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  toggleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   sheetTitle: {
     fontSize: 20,
