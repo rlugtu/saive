@@ -222,7 +222,12 @@ export default function BookmarkForm({
         className="flex-1 bg-bg"
         // Add the bottom safe-area inset so the Save button clears the home
         // indicator (notably in the share-extension flow, which has no tab bar).
-        contentContainerStyle={{ padding: 16, paddingBottom: 16 + insets.bottom, gap: 12 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 4,
+          paddingBottom: 16 + insets.bottom,
+          gap: 12,
+        }}
         keyboardShouldPersistTaps="handled"
         // Inset the scroll view by the keyboard (instead of shrinking the frame with a
         // KeyboardAvoidingView) so the focused field always scrolls into view above the
