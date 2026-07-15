@@ -13,11 +13,13 @@ the root `CLAUDE.md`/`DESIGN.md`, not code.
 
 - **Node** (v20+), npm.
 - **Postgres** via Supabase (connection strings in `web/.env`).
-- **Expo Go** (App Store) on a simulator or device for the mobile app — Expo SDK 54 runs there, so
-  **no Xcode or native build is required**. (Xcode is only needed if you later make a dev/EAS build.)
+- **Xcode** (+ CocoaPods) for the mobile app. It runs as a **custom dev build**, not Expo Go —
+  the native share extension, `expo-video` player, and `expo-blur` tab bar aren't in Expo Go — so
+  you build the dev client once (`npx expo prebuild && npx expo run:ios`), then hot-reload against it.
 - Secrets: copy `web/.env.example` → `web/.env` and fill in `DATABASE_URL`, `BETTER_AUTH_SECRET`,
-  `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID/SECRET`, `MAPBOX_TOKEN`, `ANTHROPIC_API_KEY`.
-  Mobile reads only `EXPO_PUBLIC_API_URL` (the web base URL; defaults to `http://localhost:3000`).
+  `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID/SECRET`, `MAPBOX_TOKEN`, `ANTHROPIC_API_KEY`,
+  `LINKPREVIEW_API_KEY`. Mobile reads only `EXPO_PUBLIC_API_URL` (the web base URL; defaults to
+  `http://localhost:3000`).
 
 ---
 
@@ -34,19 +36,20 @@ npx prisma migrate dev --name <x>  &&  npx prisma generate   # after any schema 
 > `npx prisma generate` explicitly, then restart dev. The service worker is prod-only, so use
 > `npm run build && npm start` to exercise PWA install/offline.
 
-### Mobile (`cd mobile`) — runs in Expo Go
+### Mobile (`cd mobile`) — runs as a custom dev build
 ```
-npx expo start         # open in Expo Go (press i for the iOS simulator, or scan the QR on device)
-npx tsc --noEmit       # typecheck (the primary local gate — includes the cross-folder types)
+npx expo prebuild                                    # generate native projects (first time / after native deps)
+npx expo run:ios                                     # build + install the dev client on a simulator/device
+npx expo start --dev-client                          # thereafter: hot-reload JS against the installed dev client
+npx tsc --noEmit                                     # typecheck (the primary local gate — includes cross-folder types)
 npx expo export --platform ios --output-dir /tmp/x   # bundle check (catches Metro/resolution errors)
 ```
 The gotcha to respect:
 
-- **Stay Expo-Go-compatible.** Only native modules bundled in Expo Go work; everything we use
-  (`expo-*`, reanimated, gesture-handler, `@gorhom/bottom-sheet`, NativeWind, the Google fonts) is.
-  Adding a native module Expo Go doesn't ship — or bumping past the SDK Expo Go supports — forces a
-  dev/EAS build (and Xcode). `app.json` config-plugin changes (permissions) also only apply in a dev
-  build, not Expo Go.
+- **This is a dev build, not Expo Go.** The app pulls in native modules Expo Go doesn't ship
+  (`expo-share-extension`, `expo-video`, `expo-blur`), so it must run on a dev/EAS build. After
+  adding a native module or changing an `app.json` config plugin (permissions, the share extension),
+  re-run `npx expo prebuild && npx expo run:ios` — a JS-only reload won't pick up native changes.
 
 For the mobile app to load data, the web dev server must be reachable at `EXPO_PUBLIC_API_URL`
 (the iOS **simulator** reaches your Mac's `localhost`; a **physical device** needs your Mac's
@@ -65,7 +68,7 @@ through the backend, then two thin UI builds:
    (validate → `assertRole` → Prisma → return). Reads go in `web/src/lib/<entity>.ts`.
 3. **Expose it** → an input schema in `web/src/server/trpc/inputs.ts` + a procedure in
    `web/src/server/trpc/routers/<entity>.ts` (query = read + explicit `assertRole`;
-   mutation = call `core`). Add it to the **API contract table in `DESIGN.md §9`.**
+   mutation = call `core`). Add it to the **API contract table in `DESIGN.md §8`.**
 4. **Web UI** → a `"use server"` action wrapper in `web/src/lib/actions/*` + RSC/components.
 5. **Mobile UI** → a screen/component in `mobile/src/app` or `mobile/src/components` that calls
    `trpc.<router>.<proc>`.
@@ -134,12 +137,12 @@ keep a thin `"use server"` wrapper, and add a `protectedProcedure` in
 | web | build + lint | `cd web && npm run build && npm run lint` |
 | mobile | typecheck | `cd mobile && npx tsc --noEmit` |
 | mobile | bundle (Metro/resolution) | `npx expo export --platform ios --output-dir /tmp/x` |
-| mobile | runtime | `npx expo start` → open in **Expo Go** + exercise the flow |
+| mobile | runtime | `npx expo start --dev-client` → open the **dev build** + exercise the flow |
 | API | auth wiring | unauthenticated `GET /api/trpc/lists.mine` → `401 UNAUTHORIZED` |
 
 `tsc` + `expo export` catch nearly everything on the mobile side; **NativeWind runtime styling
-and native modules can only be confirmed in the simulator** — visual/skin changes and anything
-using `expo-location`/camera/etc. need a real run.
+and native modules can only be confirmed on the dev build** — visual/skin changes, the share
+extension, video playback, and anything using `expo-location` need a real run on a device/simulator.
 
 There is no automated test suite yet; correctness relies on the type system + these gates +
 manual verification.
@@ -150,8 +153,9 @@ manual verification.
 
 - **Prisma 7:** run `npx prisma generate` explicitly after `migrate dev` (verify with
   `grep -c <field> web/src/generated/prisma/models/<Model>.ts`).
-- **Mobile targets Expo Go (SDK 54)** — keep deps Expo-Go-compatible; a native module Expo Go
-  doesn't bundle, or an SDK bump past what Expo Go supports, forces a dev/EAS build.
+- **Mobile is a custom dev build (Expo SDK 54)** — native modules (`expo-share-extension`,
+  `expo-video`, `expo-blur`) require it; a native dep or `app.json` config-plugin change needs a
+  fresh `expo prebuild` + `run:ios`, not just a JS reload.
 - **Bookmark images are hotlinked remote URLs** — they can break if the source blocks hotlinking.
 - **Nearby only sees geocoded bookmarks** (location picked from autocomplete); free-typed/legacy
   locations have no coordinates and show as an "N skipped" note.
@@ -163,21 +167,20 @@ manual verification.
 
 ## 8. Release & deployment
 
-- **Web** deploys from `main` (Supabase Postgres backend). Ensure the deploy host has all
-  `web/.env` secrets set (notably `MAPBOX_TOKEN`, `BETTER_AUTH_URL`, Google creds), and register
-  the prod Google redirect URI `https://<host>/api/auth/callback/google`.
-- **Mobile** ships via EAS Build → TestFlight/App Store. Before a real build: set a proper
-  `ios.bundleIdentifier` (currently the `com.anonymous.klect` placeholder), app icon/splash,
-  and point `EXPO_PUBLIC_API_URL` at the deployed web host.
-- **Current state:** all of the two-app work lives on the branch `restructure-two-apps` and has
-  **not** been merged to `main` or pushed. Merging is the gate to shipping web with the API +
-  restructure.
+- **Web** deploys from `main` (Supabase Postgres backend) to `https://klect.vercel.app`. Ensure the
+  deploy host has all `web/.env` secrets set (notably `MAPBOX_TOKEN`, `ANTHROPIC_API_KEY`,
+  `LINKPREVIEW_API_KEY`, `BETTER_AUTH_URL`, Google creds), and register the prod Google redirect URI
+  `https://<host>/api/auth/callback/google`.
+- **Mobile** ships via EAS Build → TestFlight/App Store. Bundle id is `com.klect.app`; the
+  `production` EAS profile points `EXPO_PUBLIC_API_URL` at `https://klect.vercel.app`. The
+  step-by-step checklist (identifiers, App Store Connect, share-extension provisioning) lives in
+  `mobile/docs/RELEASE.md`.
 
 ---
 
 ## 9. Known follow-ups
 
-Retro **pixel font** (needs `expo-font` + a bitmap font, native rebuild); **standalone
-multi-list bookmark create** on mobile (the `bookmarks.createInLists` procedure already exists);
-optionally sync the mobile theme choice to `user.theme` via `profile.update` (it's local
-secure-store today). See `DESIGN.md §10` for longer-horizon ideas.
+Bundle the retro **pixel font** on mobile (needs `expo-font` + a bitmap font) so the Pixel theme
+matches web; optionally sync the mobile theme choice to `user.theme` via `profile.update` (it's
+local secure-store today); Android **share-to-app** (the iOS share extension has no Android
+equivalent yet). See `DESIGN.md §9` for longer-horizon ideas.
