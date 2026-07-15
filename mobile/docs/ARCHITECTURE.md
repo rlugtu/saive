@@ -349,7 +349,7 @@ the `@/*` fallback) is re-checked before mounting the WebView.
 ### Shared components
 
 `photo-card.tsx` (photo-forward card + `theme/shadows.ts` drop shadow, with the image → fallback →
-emoji-placeholder error walk), `tag-pill.tsx` (a `#hashtag` in uniform accent text — no pill/color),
+emoji-placeholder error walk), `tag-pill.tsx` (a `#hashtag` in uniform muted/secondary text — no pill/color),
 `comments-section.tsx` (add/delete/list with relative timestamps, newest first), `list-form.tsx`,
 `login-screen.tsx`.
 

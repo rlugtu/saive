@@ -5,11 +5,11 @@ import { Text } from 'react-native';
 type Props = { name: string; color?: string };
 
 /**
- * A tag rendered as a #hashtag — plain accent-colored text, no pill background, no per-tag
- * color. The leading "#" is display-only; tags are stored lowercase and without it.
+ * A tag rendered as a #hashtag — calm, readable secondary (muted) text, no pill background, no
+ * per-tag color. The leading "#" is display-only; tags are stored lowercase and without it.
  */
 export default function TagPill({ name }: Props) {
   return (
-    <Text className="font-sans text-sm text-accent">#{name.toLowerCase()}</Text>
+    <Text className="font-sans text-sm text-muted">#{name.toLowerCase()}</Text>
   );
 }
