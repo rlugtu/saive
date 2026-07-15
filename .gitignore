@@ -11,6 +11,9 @@ node_modules/
 # Logs
 *-debug.log*
 
+# Local release-readiness scratch (not committed)
+APP_STORE_READINESS.md
+
 # Env (each app opts in via its own .env.example)
 .env
 .env.*

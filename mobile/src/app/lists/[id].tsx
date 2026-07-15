@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, Switch, Text, TextInput, View } from 'react-native';
 import {
   Stack,
   useFocusEffect,
@@ -34,6 +34,8 @@ export default function ListScreen() {
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState('');
+  // Off by default → all bookmarks; on → only those the user hasn't visited.
+  const [hideVisited, setHideVisited] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -49,15 +51,17 @@ export default function ListScreen() {
     return [...map.values()];
   }, [bookmarks]);
 
-  // Name search (substring) AND tag filter (OR across selected tags).
+  // Name search (substring) AND tag filter (OR across selected tags) AND
+  // an optional "show only unvisited" filter, all applied together.
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return bookmarks.filter(
       (b) =>
         (q === '' || b.name.toLowerCase().includes(q)) &&
-        (selected.size === 0 || b.tags.some((bt) => selected.has(bt.tag.id))),
+        (selected.size === 0 || b.tags.some((bt) => selected.has(bt.tag.id))) &&
+        (!hideVisited || !b.visited),
     );
-  }, [bookmarks, selected, query]);
+  }, [bookmarks, selected, query, hideVisited]);
 
   function toggleTag(tagId: string) {
     setSelected((prev) => {
@@ -152,6 +156,15 @@ export default function ListScreen() {
               </View>
             )}
 
+            <View className="flex-row items-center justify-between">
+              <Text className="font-sans text-ink">Show only unvisited</Text>
+              <Switch
+                value={hideVisited}
+                onValueChange={setHideVisited}
+                trackColor={{ true: t.primary }}
+              />
+            </View>
+
             {isMember && (
               <View className="flex-row gap-2">
                 {canEdit && (
@@ -207,7 +220,7 @@ export default function ListScreen() {
                     key={tag.id}
                     onPress={() => toggleTag(tag.id)}
                     className="px-1 py-0.5">
-                    <Text className="font-sans text-sm text-accent">
+                    <Text className="font-sans text-sm text-muted">
                       #{tag.name.toLowerCase()} ✕
                     </Text>
                   </Pressable>
@@ -298,7 +311,7 @@ export default function ListScreen() {
                 key={tag.id}
                 onPress={() => toggleTag(tag.id)}
                 className="flex-row items-center justify-between border-b border-border py-3">
-                <Text className={`font-sans ${on ? 'text-accent' : 'text-ink'}`}>
+                <Text className="font-sans text-ink">
                   #{tag.name.toLowerCase()}
                 </Text>
                 {on && <Text className="text-base text-primary">✓</Text>}
