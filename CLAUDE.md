@@ -17,8 +17,10 @@ Lists and bookmarks both support **comments**. Pasting a link auto-fills a bookm
 detects a playable video). Bookmarks are created inside a list, or via a standalone flow
 (`/bookmarks/new`) that adds an **independent copy to each of several lists** at once. A **Near me**
 page (`/nearby`) finds geocoded bookmarks within a chosen radius of the user's current location.
-Two selectable **themes** — **pixel** (retro 8-bit) and
-**modern** (sleek/minimalist), each light + dark. Installable **PWA**.
+Bookmarks in a list can also be spun into a **poll** to vote on. Six selectable **themes** across
+three families — **pixel** (retro 8-bit), **modern** (sleek/minimalist), and **journal** (warm
+scrapbook) — each in light + dark. The web app is an installable **PWA**; the iOS app adds a native
+**share extension** that saves a shared link into a list from inside the OS share sheet.
 
 **Docs:** `DESIGN.md` (data model, permissions, routes, API contract) · `docs/ARCHITECTURE.md`
 (human-readable design + architecture overview) · `docs/DEVELOPMENT.md` (run/build/extend +
@@ -31,8 +33,8 @@ workspaces, no Turborepo) and **no shared code packages**.
 
 - **`web/`** — Next.js 16 app; owns the database, auth, and **all** business logic. Also hosts the
   HTTP API (tRPC) that mobile consumes. See `web/CLAUDE.md`.
-- **`mobile/`** — Expo / React Native app; a **thin client** of web's API. UI only. *(Not built
-  yet — added in the RN conversion.)* Will have its own `mobile/CLAUDE.md`.
+- **`mobile/`** — Expo / React Native app (iOS + Android); a **thin client** of web's API. UI only.
+  See `mobile/CLAUDE.md`.
 
 **The two sharing seams (and only these):**
 1. **The spec** — this `CLAUDE.md` + `DESIGN.md` are the single source of truth for product, data

@@ -13,10 +13,11 @@ has a name, description, one or more URLs (the first is the original source), ex
 photos, notes, a location, a 0–5 rating, a visited flag, and user-scoped tags (each auto-
 assigned a color). Lists are drag-reorderable per user, searchable, and shareable — you
 invite **viewers** (read + comment) or **collaborators** (edit + comment), and the **owner**
-manages membership. Lists and bookmarks both support comments. Pasting a link auto-fills a
-bookmark from page metadata. A **Near me** view finds geocoded bookmarks within a radius of
-your location. There are two visual **themes** — pixel (retro 8-bit) and modern (sleek) —
-each with light and dark variants.
+manages membership (invites are request-based). Lists and bookmarks both support comments, and a
+list's bookmarks can be spun into a **poll**. Pasting a link auto-fills a bookmark from page
+metadata and detects a playable video. A **Near me** view finds geocoded bookmarks within a radius
+of your location. There are **six visual themes** across three families — pixel (retro 8-bit),
+modern (sleek), and journal (warm scrapbook) — each with light and dark variants.
 
 It ships as **two clients over one backend**: a Next.js **web** app and an Expo/React
 Native **mobile** app.
@@ -47,10 +48,10 @@ The one compile-time link is a **type-only import**: mobile imports web's tRPC `
 *type* for end-to-end type safety. Because it's `import type`, it's erased at build time —
 there is **no runtime dependency** on web (see §6).
 
-> **Why not a monorepo with shared packages?** That was considered and rejected (see the
-> superseded [`monorepo-migration.md`](./monorepo-migration.md)). The chosen model keeps the
-> apps genuinely decoupled while still writing backend logic once, because the backend lives
-> wholly inside `web` and mobile reaches it only over HTTP.
+> **Why not a monorepo with shared packages?** A pnpm/Turborepo monorepo with shared `packages/*`
+> was considered and rejected. The chosen model keeps the apps genuinely decoupled while still
+> writing backend logic once, because the backend lives wholly inside `web` and mobile reaches it
+> only over HTTP.
 
 ---
 
@@ -127,8 +128,9 @@ The mobile-facing surface, mounted at `/api/trpc` beside the auth handler.
 - `trpc.ts` — context (resolves the better-auth session) + `protectedProcedure` (requires a
   signed-in user, narrows `ctx.user`).
 - `inputs.ts` — reusable zod input schemas (the typed contract mobile sends).
-- `routers/*.ts` — one router per domain; **38 procedures** total. Each is a thin wrapper
-  over a `core` mutation or a `lib` read.
+- `routers/*.ts` — one router per domain (lists, bookmarks, comments, polls, sharing, friends,
+  profile, tags, nearby, and the external-service router mounted as `places`/`metadata`/`comprehend`);
+  **55 procedures** total. Each is a thin wrapper over a `core` mutation or a `lib` read.
 - `router.ts` — combines them into `appRouter` and `export type AppRouter`.
 
 **Security note:** the read modules have no built-in authz (RSC pages gate before reading),
@@ -186,10 +188,12 @@ displayName, birthday, icon, theme).
 
 ## 6. The mobile app (a thin, typed client)
 
-**Stack:** Expo SDK 54 (runs in **Expo Go** — no dev build), expo-router (file-based routes),
-React 19, react-native-reanimated,
-`expo-image`, NativeWind, `@trpc/client`, `@better-auth/expo`, `expo-location`,
-`expo-secure-store`.
+**Stack:** Expo SDK 54 (React Native 0.81, React 19) built as a **custom dev/EAS build** — the
+native **share extension** (`expo-share-extension`), video player (`expo-video`), and frosted-glass
+tab bar (`expo-blur`) can't run in Expo Go. expo-router (file-based routes),
+react-native-reanimated + gesture-handler, `@gorhom/bottom-sheet` (tag filter),
+`react-native-reorderable-list` (drag-reorder), `expo-image`, NativeWind, `@trpc/client`,
+`@better-auth/expo`, `expo-location`, `expo-secure-store`, expo-font (Newsreader / Work Sans).
 
 ### Talking to the backend — the typed client
 
@@ -217,20 +221,27 @@ modules begin with.
 
 ```
 src/app/_layout.tsx           root Stack + auth gate (login when signed out); registers routes
-  (tabs)/_layout.tsx          Tabs — Nearby / Create(＋) / Lists / Friends / Profile (@expo/vector-icons)
-  (tabs)/index.tsx            Home: lists + search        → push /lists/[id]
+  (tabs)/_layout.tsx          Tabs (swipeable pager) — Nearby / Create(＋) / Lists / Friends / Profile
+  (tabs)/index.tsx            Home: lists + search + drag-reorder → push /lists/[id]
   (tabs)/nearby.tsx           radius search (expo-location → trpc.nearby.find)
   (tabs)/create.tsx           action-only tab: press intercepted → push /bookmarks/new (renders null)
+  (tabs)/friends.tsx          friends + add-by-email; → friend-requests / pending-requests
   (tabs)/profile.tsx          own profile; settings gear → push /settings
   settings.tsx                account + theme switcher (pushed route, reached from Profile gear)
-  lists/[id].tsx              a list's bookmarks + tag filter + comments; top action row → Edit list / Members
-  lists/new.tsx  lists/edit.tsx (edit + delete)  lists/members.tsx   (modals / pushed screens)
-  bookmarks/[id].tsx          bookmark detail + comments + edit/delete/visited
+  lists/[id].tsx              a list's bookmarks + tag filter + comments; → Edit list / Members / Polls
+  lists/new.tsx  lists/edit.tsx  lists/members.tsx
+  bookmarks/[id].tsx          bookmark detail + comments + video + edit/delete/visited
   bookmarks/new.tsx  bookmarks/edit.tsx
+  polls/*                     list polls, poll detail (Vote/Results), new/edit
+  requests.tsx                incoming list-join requests (approve/reject)
+  friend-requests.tsx  pending-requests.tsx      incoming / outgoing friend requests
+  users/[id].tsx              another user's profile (add-friend)
+  src/share-extension.tsx     iOS share-sheet save UI (entry: index.share.js)
 ```
 
 Reusable pieces live in `src/components`: `bookmark-form.tsx` and `list-form.tsx` (shared by
-create + edit), `comments-section.tsx` (shared by bookmark + list comments), `login-screen.tsx`.
+create + edit), `comments-section.tsx` (shared by bookmark + list comments), `profile-view.tsx`
+(own + others' profiles), `list-picker.tsx`, `login-screen.tsx`.
 
 ### Screen data pattern
 
@@ -292,10 +303,11 @@ mobile-first** (see `mobile/docs/design.md`). Only palette/skin/font differ per 
 |---|---|---|---|
 | Supabase Postgres | Data | web (Prisma) | pooled URL at runtime, direct URL for migrations |
 | Mapbox | Location autocomplete + reverse geocode | `core/places.ts` | `MAPBOX_TOKEN`; degrades to plain text if unset |
-| Microlink | Link/photo/video unfurl for autofill | `core/metadata.ts` | free tier is IP-rate-limited; YouTube via oEmbed |
-| Anthropic | Caption → structured bookmark fields | `core/comprehend.ts` | best-effort; falls back to raw caption |
+| LinkPreview | Primary link/photo/video unfurl for autofill | `core/metadata.ts` | `LINKPREVIEW_API_KEY`; YouTube via oEmbed |
+| Microlink | Fallback unfurler when LinkPreview key is unset or fails | `core/metadata.ts` | free tier is IP-rate-limited |
+| Anthropic | Autofill comprehension + caption → structured bookmark fields | `core/comprehend.ts` | `ANTHROPIC_API_KEY`; best-effort, degrades to raw metadata |
 
-All four are reachable from mobile via their tRPC procedures — no keys leave web.
+All are reachable from mobile via their tRPC procedures — no keys leave web.
 
 ---
 

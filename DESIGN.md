@@ -1,13 +1,13 @@
 # Klect — Design Doc
 
 > Bookmarks organized into shareable lists, with tags, filtering, and collaboration.
-> Retro 8-bit aesthetic. This document is the single source of truth for the design;
-> update it whenever a decision changes.
+> Ships as two clients over one backend — a Next.js **web** app and an Expo/React Native
+> **mobile** app. This document is the single source of truth for the design; update it whenever a
+> decision changes.
 > See also: `docs/FEATURES.md` (core user features + web/mobile parity).
 
-**Status:** ✅ Feature-complete (all 8 build steps) + post-v1 additions (link autofill,
-photos, installable PWA). Deployed from `main`.
-**Last updated:** 2026-07-02
+**Status:** Live. Web deploys from `main`; mobile ships to TestFlight/App Store via EAS.
+**Last updated:** 2026-07-14
 
 ## Overview
 
@@ -15,14 +15,18 @@ Klect is a bookmarking app where bookmarks live inside **lists** that can be sha
 people. A bookmark is richer than a URL — it has a name, description, multiple URLs (the first is
 the original source), extracted **photos**, free-form notes, a location, a 0–5 rating, a
 visited flag, and user-scoped **tags**. Lists can be organized (per-user drag-reorder) and
-searched (by name, and by tag with OR filtering). Lists are shared by inviting people as
-**viewers** (view + comment) or **collaborators** (full edit + comment); the **owner** manages
-membership. Both lists and bookmarks support **comments**. Pasting a link (YouTube/TikTok/blogs)
-auto-fills a bookmark from the page's metadata. The whole thing wears a **retro 8-bit** skin and
-is an installable **PWA**.
+searched (by name, and by tag with OR filtering), and each is **public or private** (owner-only
+toggle, private by default). Lists are shared by inviting people as **viewers** (view + comment) or
+**collaborators** (full edit + comment); the **owner** manages membership, and invites are
+**request-based** (the invitee approves them). Users add each other as **friends** and can
+bulk-invite a friend to their lists. Both lists and bookmarks support **comments**, and a list's
+bookmarks can be spun into a **poll** to vote on. Pasting a link (YouTube/TikTok/blogs) auto-fills a
+bookmark from the page's metadata and detects a playable video. A **Near me** view finds geocoded
+bookmarks near you. It wears one of **six themes** (pixel / modern / journal, each light + dark);
+the web app is an installable **PWA** and the iOS app adds a native **share extension**.
 
-For a benefit-first, marketing-oriented summary of the app and its headline features, see
-**`docs/marketing.md`** (kept in sync as features ship).
+For a benefit-first, non-technical summary and narrative use cases, see the **Product overview** and
+**Use cases** sections of `docs/FEATURES.md` (kept in sync as features ship).
 
 ---
 
@@ -47,7 +51,7 @@ For a benefit-first, marketing-oriented summary of the app and its headline feat
 - **Journal** — warm "scrapbook": serif titles (Newsreader) + sans body (Work Sans), soft
   rounded cards, warm beige/brown palette, solid (non-gradient) primary buttons.
 
-Themes are swapped via a `data-theme` attribute on `<html>`; see §8 for how the modern skin
+Themes are swapped via a `data-theme` attribute on `<html>`; see §7 for how the modern skin
 reuses the same components/tokens without any layout change.
 
 ---
@@ -79,7 +83,7 @@ Resolved during planning (most-recent context in parentheses):
   address plus `latitude`/`longitude`. On the bookmark page the address is tappable and opens the
   place in a maps app (Apple Maps / Google Maps chooser on Apple devices, Google Maps elsewhere).
   Free-typed text still saves with no coordinates. No in-app map UI.
-- **Realtime**: out of scope for v1 — comments/edits refresh on action. Supabase realtime can
+- **Realtime**: out of scope — comments/edits refresh on action. Supabase realtime can
   come later.
 
 ---
@@ -232,111 +236,69 @@ helper — never rely on UI gating alone. Read-only public access uses `assertCa
 
 ---
 
-## 6. Build plan
+## 6. Feature set
 
-Pause for review after **each** step.
+The capabilities the app ships today. Product-level coverage (and web/mobile parity) lives in
+`docs/FEATURES.md`; the implementation notes below are the load-bearing ones.
 
-- [x] **1. Scaffold** — Next.js 16 + Tailwind v4 + Prisma 7 (pg driver adapter) + full domain
-      schema; 8-bit design tokens + base components (PixelButton/Card/Input/Badge, ThemeToggle).
-      DB/OAuth secrets pending in `.env`; better-auth tables + wiring deferred to Step 2.
-- [x] **2. Auth** — better-auth wired (email/password verified end-to-end; Google wired,
-      needs a real browser sign-in to confirm). Migrations applied to Supabase (init +
-      comment check constraint). Route guards, onboarding, and settings live. Theme applied
-      from `user.theme` in the root layout.
-- [x] **3. Lists** — CRUD + home page + per-user drag-reorder (Framer Motion `Reorder`,
-      debounced persistence) + client-side name filter. Owner-also-a-member convention;
-      role-gated edit (COLLABORATOR+) / delete (OWNER) via `assertRole`. Render paths verified
-      against Supabase; write actions covered by tsc/build.
-- [x] **4. Bookmarks** — CRUD + user-scoped tags (pill `TagInput` with suggestions,
-      upsert+prune sync scoped to the acting user) + interactive rating picker + visited
-      toggle. List page lists bookmark cards; detail page is the "sleek 8-bit" view (hero,
-      tag pills, URLs, notes). Render paths verified against Supabase.
-- [x] **5. Search** — unified home `SearchBar` combobox (Lists section navigates, Matched
-      tags section adds pills). Selected tags live in the URL (`?tags=`), server-rendered OR
-      filter across all the user's lists. Tag pills with × + Clear all. Removed the step-3
-      in-grid list filter per §4. Cross-list OR filtering verified against Supabase.
-- [x] **6. Sharing** — invite by email (owner-only); existing users added instantly, unknown
-      emails become pending invites that auto-link on signup (better-auth `databaseHooks`).
-      `/invite/[token]` accept flow (with `?next=` login round-trip). Owner `MembersPanel`:
-      invite form, role change, remove member, revoke invite; non-owners get Leave list.
-      Auto-link + role + owner-only gating verified live against Supabase.
-- [x] **7. Comments** — on lists and bookmarks, newest-first. Any member (viewer+) can post;
-      author or list owner can delete (DB check constraint enforces exactly one target).
-      React 19 auto-resets the post box. Rendering, ordering, and delete gating verified live.
-- [x] **8. Polish** — page-transition `template.tsx` (with `MotionConfig reducedMotion="user"`),
-      animated tag pills (AnimatePresence) in search + tag input, loading skeletons
-      (home/list/bookmark), 8-bit `not-found.tsx`, responsive header pass.
-
-### Post-v1 updates
-- **Link autofill**: paste a URL in the bookmark form → `fetchLinkMetadata` runs a two-stage
-  pipeline. **Extraction** unfurls the page (YouTube via oEmbed; everything else via
-  **LinkPreview**, falling back to **Microlink**). **Comprehension** (`comprehendMetadata`,
-  `claude-haiku-4-5`) then cleans the title, writes a `Link Summary:`-prefixed description, and
-  adds **up to 3** suggested `tags` (capped, never padded to reach 3) + an inferred `location`.
-  For articles it also fetches the page's readable
-  text server-side (`core/page-text.ts`, SSRF-guarded) so the LLM can extract vital detail
-  sections (Ingredients, Steps, Hours, Event Details, …) appended under the summary. The result
-  carries `tags`/`location` alongside name/description/photos. `urls[0]` keeps the original source.
-  Every stage degrades gracefully when its key is unset. Bookmarks gained an `images String[]` field.
-- **Bookmark UI**: removed the per-bookmark emoji icon; card thumbnails; single-list search
-  (name + tag pills); create-form quick-add chips for tags already in the list.
-- **PWA**: web manifest, generated icons (any + maskable + apple), a service worker with an
-  offline fallback (`/offline`), prod-only registration. (Web Share Target intentionally not
-  built — iOS Safari can't receive shares; see §10.)
-- **Video player**: autofill detects a playable video (YouTube/Vimeo/TikTok/Instagram embeds +
-  direct og:video files) via `src/lib/video.ts` `detectVideo`; stored as `videoUrl`/`videoType`
-  on the bookmark; the detail page shows an optional click-to-play player (`BookmarkVideo`,
-  poster facade → iframe on click; `<video>` for files). Trusted-host whitelist enforced on both
-  write and render. See `docs/video-player-plan.md`.
-- **Modern theme + rename**: added a sleek/minimalist theme (monochrome + pastel gradients, sans
-  font) in light + dark, alongside the retro 8-bit themes (renamed to **pixel**). `Theme` enum is
-  `PIXEL_LIGHT|PIXEL_DARK|MODERN_LIGHT|MODERN_DARK` (data-theme `pixel-light`/`pixel-dark`/
-  `modern-light`/`modern-dark`); central registry `src/lib/theme.ts` (`THEME_OPTIONS`,
-  `themeDataAttr`, `coerceTheme`); modern skin is unlayered `[data-theme^="modern"]` CSS overriding
-  the `.pixel-*` primitives (no layout changes). 4-option picker in settings/onboarding.
-- **Journal theme + Modern-Light default**: ported mobile's warm "scrapbook" Journal theme to web
-  (`JOURNAL_LIGHT|JOURNAL_DARK`, data-theme `journal-light`/`journal-dark`) — serif titles
-  (Newsreader) + Work Sans body, soft rounded cards, solid primary buttons; same unlayered
-  `[data-theme^="journal"]` skin pattern. Made **`MODERN_LIGHT` the default** for both apps (web:
-  Prisma `@default`, better-auth `defaultValue`, unauthenticated/login screen, `theme.ts`
-  fallbacks; mobile: system-aware Modern in `theme-provider.tsx`). Picker now shows 6 options.
-- **Near me** (`/nearby`): find geocoded bookmarks within a chosen radius of the browser's current
-  location. RSC shell + client island (`NearbyFinder`) for geolocation; a server action
-  (`findNearbyBookmarks` in `src/lib/actions/nearby.ts`) haversine-filters (`src/lib/geo.ts`) the
-  user's coordinate-bearing bookmarks (`getBookmarksWithCoords`) across the selected lists and
-  returns them closest→farthest with a list tag + distance. Bookmarks with a typed location but no
-  coordinates are excluded and counted in an "N skipped" note. See `docs/nearby.md`.
-- **Standalone create bookmark** (`/bookmarks/new`, from a Home button): the normal `BookmarkForm`
-  plus a list selector/creator — pick any COLLABORATOR+ lists and/or create new lists by name. A
-  server action (`createBookmarkInLists` in `src/lib/actions/bookmarks.ts`) writes **one independent
-  bookmark row per target list** (each with its own tag links), so editing or deleting one copy
-  never affects the others. New lists are made via the shared `createListRecord` (`src/lib/lists.ts`).
-- **Colored tags**: each `Tag` carries a `color` (hex) assigned at creation from a fixed palette
-  (`src/lib/tag-colors.ts`), chosen to avoid colors of other tags already in that list (best-effort —
-  tags are user-scoped, so one color per tag follows it everywhere). `syncBookmarkTags` assigns it;
-  `PixelBadge` renders it with a luminance-computed text color (legible on all themes). Tag pills are
-  colored everywhere (cards, detail, filter/search pills, editor); new/draft tags stay neutral.
-  Tag badges pass `tag` to `PixelBadge` (adds a `.pixel-tag` hook); the **modern** skin softens them
-  into rounded, non-uppercase pills with a thin border (`[data-theme^="modern"] .pixel-tag` in
-  `globals.css`) — the pixel theme keeps its sharp, uppercase tags. On the list page (`BookmarkCard`)
-  tag pills render one size smaller.
-- **List tag-filter dropdown**: on the list page, a "Tags ▾" button beside the in-list search input
-  (`ListBookmarks`) opens a dropdown of every tag used in that list. Rows are click-to-**toggle** and
-  the menu stays open for multi-select; selected rows show a highlighted/checked state. Picks feed the
-  same client-side `selected` OR-filter as the typeahead (pills + Clear all below). Closes on outside
-  click or Escape. Hand-rolled to match the existing dropdowns (no new dependency).
-- **Friends + request-based sharing**: added a `Friendship` model (email-based friend requests the
-  addressee accepts) and a `/friends` page (add friends, accept/decline incoming requests, per-friend
-  **Edit** = remove and **Add** = multiselect of your lists + role → send join requests). List
-  sharing became **request-based**: `inviteToList` now creates a PENDING `ListInvite` that the
-  invitee approves/rejects from a **collab requests** section on the home page (no more instant-add;
-  the signup auto-join hook was removed so a new user's pending invites appear as requests). Inviting
-  a non-friend offers to send a friend request too (`alsoFriend`). New tRPC `friends.*` router +
-  `sharing.incomingRequests`/`approveRequest`/`rejectRequest`; mirrored on web + mobile.
+- **Lists & bookmarks** — CRUD for both. Lists carry a name/description/emoji icon, a role badge,
+  and bookmark + member counts; bookmarks carry the fields in §3 (multiple URLs, extracted photos,
+  notes, location, rating, visited, tags). The home page shows every list you own or belong to with
+  per-user **drag-reorder** (web: Framer Motion `Reorder`; mobile: long-press drag).
+- **Tags** — user-scoped, each auto-assigned a `color` at creation from a fixed palette
+  (`src/lib/tag-colors.ts`) and rendered as a colored pill (luminance-computed text color, legible
+  on every theme). Filtering is OR-based; the home search filters across all lists (web) and each
+  list page has its own tag filter (web dropdown · mobile bottom sheet).
+- **Search** — a unified home `SearchBar` combobox: a **Lists** section navigates by name; a
+  **Matched tags** section adds tag pills that OR-filter bookmarks across all lists (`?tags=` in the
+  URL, server-rendered).
+- **Link autofill** — paste a URL and `fetchLinkMetadata` runs a two-stage pipeline. **Extraction**
+  unfurls the page (YouTube via oEmbed; everything else via **LinkPreview**, falling back to
+  **Microlink**) and detects a playable video (`detectVideo`). **Comprehension** (`comprehendMetadata`,
+  `claude-haiku-4-5`) cleans the title, writes a `Link Summary:`-prefixed description, and adds up to
+  3 suggested `tags` + an inferred `location`. For articles it also fetches the page's readable text
+  server-side (`core/page-text.ts`, SSRF-guarded) so the LLM can extract vital detail sections
+  (Ingredients, Steps, Hours, Event Details, …). Every stage degrades gracefully when its key is unset.
+- **Video** — a detected playable video (YouTube/Vimeo/TikTok/Instagram embeds + direct media files)
+  is stored as `videoUrl`/`videoType` and shown as an inline click-to-play player (web: trusted-host
+  `<iframe>` behind a poster facade; mobile: `expo-video` for files, WebView iframe for embeds). The
+  trusted-host whitelist is re-checked on both write and render.
+- **Location** — the bookmark `location` is an address/business type-ahead via **Mapbox Search Box**
+  (server-proxied), storing `latitude`/`longitude`; picking a business also autofills the name/URL/
+  description. The address opens the place in a maps app. Free-typed text saves with no coordinates.
+- **Standalone multi-list create** (`/bookmarks/new`) — the normal bookmark form plus a list
+  selector/creator; `createBookmarkInLists` writes **one independent bookmark row per target list**
+  (own tag links), so editing or deleting one copy never touches the others. New lists created inline
+  take a public/private toggle (`newListsPublic`).
+- **Sharing** — invite by email as VIEWER or COLLABORATOR; every invite is a **request-based** PENDING
+  `ListInvite` the invitee approves/rejects from a **List requests** view (no auto-join). Inviting a
+  non-friend can also send a friend request. Owners manage membership (role change, remove, revoke);
+  non-owners can leave.
+- **Friends** — email-based friend requests the addressee accepts (mutual once accepted), with
+  incoming/outgoing (withdrawable) request views. A friend row can remove the friend, open their
+  profile, and bulk-add them to a multiselect of your lists + role (per-list join requests).
+- **Profiles** (`/users/[id]`) — identity, "member since", stats (public lists · friends), and the
+  user's public lists, with an add-friend action on others' profiles.
+- **Comments** — on both lists and bookmarks, newest-first; any member (viewer+) can post; author or
+  list owner can delete (a DB check constraint enforces exactly one target).
+- **Polls** — pick 2+ bookmarks in a list as options; set start/end, max votes, revote rule, and (at
+  creation only) anonymity; vote and see ranked results. Anonymous polls hide who voted from everyone
+  (counts still show) — see §3.
+- **Near me** (`/nearby`) — haversine-filters the user's coordinate-bearing bookmarks within a chosen
+  radius of the current location (web: browser geolocation, 0.5–10 mi; mobile: native GPS, 1–25 mi),
+  returned closest→farthest. Bookmarks with a typed-but-not-geocoded location are excluded and counted
+  in an "N skipped" note.
+- **Themes** — six across three families (pixel / modern / journal), each light + dark, stored per
+  user; **`MODERN_LIGHT` is the web default** (mobile defaults to Journal Light). Each theme is a
+  CSS-token block swapped via `data-theme` on `<html>` (web) / NativeWind `vars()` (mobile).
+- **Platform extras** — the web app is an installable **PWA** (manifest, prod-only service worker,
+  `/offline` fallback) and has an AI **caption extraction** procedure (`comprehend.caption`). The iOS
+  app adds a native **share extension** that saves a shared link into a list from inside the OS share
+  sheet.
 
 ---
 
-## 8. Architecture & code structure
+## 7. Architecture & code structure
 
 Next.js App Router, **server-first**: pages are React Server Components that read data directly
 through the data-access layer; mutations are **server actions**. There is deliberately **no
@@ -387,12 +349,12 @@ prisma/                     # schema.prisma + migrations (committed)
 
 ---
 
-## 9. Web + mobile split (two-app architecture)
+## 8. Web + mobile split (two-app architecture)
 
 Klect is **two independent apps in one repo** (`web/`, `mobile/`), sharing a spec and a runtime
-API — **not** a monorepo with shared code packages. This section is the shared contract both apps
-build against; see the top-level `CLAUDE.md` for the per-feature workflow and the earlier
-`docs/monorepo-migration.md` (superseded) for the rejected shared-packages topology.
+API — **not** a monorepo with shared code packages (no workspace tooling, no shared packages). This
+section is the shared contract both apps build against; see the top-level `CLAUDE.md` for the
+per-feature workflow.
 
 **Topology**
 - **`web/`** owns the database, auth, and **all** business logic (Prisma schema + migrations, read
@@ -407,13 +369,14 @@ build against; see the top-level `CLAUDE.md` for the per-feature workflow and th
 
 **What web owns vs. what mobile rebuilds**
 - Owned by web (shared via the API, not copied): data model, read queries, `permissions.ts`, auth
-  server (better-auth), and the external-service integrations (Mapbox places, Microlink metadata,
-  Anthropic extraction) — mobile reaches these through procedures, so no keys ship in the app.
+  server (better-auth), and the external-service integrations (Mapbox places, LinkPreview/Microlink
+  metadata, Anthropic comprehension) — mobile reaches these through procedures, so no keys ship in
+  the app.
 - Rebuilt in mobile: everything in `components/` (DOM + Tailwind + Framer Motion) →
-  RN views + **NativeWind** (same token palette) + **Moti/Reanimated**; `next/link` + App Router →
-  **expo-router**; `<img>`/remote images → **expo-image**; the pixel-border look → shared style
-  helpers. Auth client: `better-auth/react` (web) → `@better-auth/expo` (mobile), same server.
-- Design **tokens** (the palette for the 4 themes) are defined once as data in web and mirrored by
+  RN views + **NativeWind** (same token palette) + **react-native-reanimated**; `next/link` + App
+  Router → **expo-router**; `<img>`/remote images → **expo-image**; the pixel-border look → shared
+  style helpers. Auth client: `better-auth/react` (web) → `@better-auth/expo` (mobile), same server.
+- Design **tokens** (the palette for the 6 themes) are defined once as data in web and mirrored by
   mobile's NativeWind config.
 
 **Type sharing:** mobile imports web's tRPC `AppRouter` **type-only** for end-to-end types; this is
@@ -496,14 +459,14 @@ secrets stay in `web/`'s env.
 
 ---
 
-## 10. Open questions / future
+## 9. Open questions / future
 
-- **Location autocomplete** (shipped): the bookmark `location` is an address/business type-ahead
-  via Mapbox Search Box (server-proxied), storing `latitude`/`longitude`; the address on the bookmark page
-  opens the place in a maps app. See **`docs/location-autocomplete.md`**.
-- **Share target** (deferred): manifest `share_target` + `/share` route for Android/desktop PWAs;
-  iOS Safari can't receive shares (Apple limitation) — would need an iOS Shortcut forwarding to
-  `/share?url=` or a native share extension.
-- Realtime collaboration (Supabase realtime) — deferred past v1.
-- Pagination for lists with many bookmarks — add when needed.
-- Image durability: photos are hotlinked remote URLs; move to Supabase Storage if links rot.
+- **Web PWA share target** (deferred): a manifest `share_target` + `/share` route for
+  Android/desktop PWAs. iOS Safari can't receive shares (Apple limitation) — which is why sharing
+  into the app on iOS is handled by the **native share extension** in the mobile app instead.
+- **Android share-to-app** (deferred): the iOS share extension has no Android equivalent yet.
+- **Realtime collaboration** (Supabase realtime): comments/edits currently refresh on action.
+- **Pagination** for lists with many bookmarks — add when needed.
+- **Image durability**: photos are hotlinked remote URLs; move to Supabase Storage if links rot.
+- **Reel caption extraction**: Instagram/TikTok reel captions are often truncated/login-walled;
+  reliable extraction needs a social-scraper API (`comprehend.caption` is stubbed for this).
