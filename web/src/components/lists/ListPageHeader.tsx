@@ -3,6 +3,7 @@ import { Globe } from "lucide-react";
 import { atHandle } from "@/lib/handle";
 import { roleAtLeast } from "@/lib/permissions";
 import type { getListForViewer } from "@/lib/lists";
+import { getChatMessages, getChatUnreadCount } from "@/lib/list-chat";
 import {
   updateList,
   deleteList,
@@ -14,7 +15,9 @@ import {
   ListToolbar,
   ListToolbarTriggers,
   ListToolbarPanels,
+  type CreateBookmarkProps,
 } from "@/components/lists/ListToolbar";
+import { ListChatLauncher } from "@/components/lists/ListChatLauncher";
 import { ListTabs } from "@/components/lists/ListTabs";
 import { ListVisibilityToggle } from "@/components/lists/ListVisibilityToggle";
 import { PixelButton } from "@/components/ui/PixelButton";
@@ -28,20 +31,41 @@ type ListAccess = NonNullable<Awaited<ReturnType<typeof getListForViewer>>>;
  * actions), and the route-based tab bar. Kept identical across tabs so the tabs
  * feel like two faces of one view.
  */
-export function ListPageHeader({
+export async function ListPageHeader({
   access,
   userId,
   activeKey,
+  createBookmark,
 }: {
   access: ListAccess;
   userId: string;
   activeKey: string;
+  /** Collaborator+ on the List tab — enables the header "New bookmark" button. */
+  createBookmark?: CreateBookmarkProps;
 }) {
   const { list, role, isMember } = access;
   const id = list.id;
   const canEdit = isMember && roleAtLeast(role, "COLLABORATOR");
   const isOwner = isMember && role === "OWNER";
   const ownerName = atHandle(list.owner.handle);
+
+  // Members-only group chatroom: load the first page + unread badge server-side.
+  const chat = isMember
+    ? {
+        initial: await getChatMessages(userId, id),
+        unread: await getChatUnreadCount(userId, id),
+      }
+    : null;
+
+  const chatLauncher = chat ? (
+    <ListChatLauncher
+      listId={id}
+      myId={userId}
+      isOwner={isOwner}
+      initial={chat.initial}
+      initialUnread={chat.unread}
+    />
+  ) : null;
 
   const identity = (
     <>
@@ -82,7 +106,7 @@ export function ListPageHeader({
             <h1 className="text-2xl text-primary break-words">{list.name}</h1>
             {isMember && (
               <div className="shrink-0">
-                <ListToolbarTriggers />
+                <ListToolbarTriggers slot={chatLauncher} />
               </div>
             )}
           </div>
@@ -138,6 +162,7 @@ export function ListPageHeader({
           <MembersPanel listId={id} currentUserId={userId} />
         ) : undefined
       }
+      createBookmark={createBookmark}
     >
       <div className="flex flex-col gap-6">{identity}</div>
     </ListToolbar>

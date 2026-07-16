@@ -34,3 +34,23 @@ export function subscribeDm(topic: string, onPing: () => void): () => void {
     c.removeChannel(channel);
   };
 }
+
+/**
+ * Subscribe to a list chatroom's broadcast topic. Same content-free-ping contract as
+ * {@link subscribeDm}: a ping just means "refetch via server action". Returns an unsubscribe
+ * fn; a no-op when realtime is off.
+ */
+export function subscribeListChat(
+  listId: string,
+  onPing: () => void,
+): () => void {
+  const c = getClient();
+  if (!c) return () => {};
+  const channel = c
+    .channel(`chat:list:${listId}`, { config: { broadcast: { self: false } } })
+    .on("broadcast", { event: "chat" }, () => onPing())
+    .subscribe();
+  return () => {
+    c.removeChannel(channel);
+  };
+}

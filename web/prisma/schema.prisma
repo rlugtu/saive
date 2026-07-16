@@ -71,6 +71,8 @@ model User {
 
   conversations ConversationParticipant[] @relation("UserConversations")
   messagesSent  Message[]                 @relation("MessagesSent")
+
+  listChatSent ListChatMessage[] @relation("ListChatSent")
 }
 
 // A friendship between two users. Directed request (requester -> addressee) that
@@ -190,11 +192,12 @@ model List {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  memberships ListMembership[]
-  invites     ListInvite[]
-  bookmarks   Bookmark[]
-  comments    Comment[]
-  polls       Poll[]
+  memberships  ListMembership[]
+  invites      ListInvite[]
+  bookmarks    Bookmark[]
+  comments     Comment[]
+  polls        Poll[]
+  chatMessages ListChatMessage[]
 
   @@index([ownerId])
 }
@@ -210,8 +213,29 @@ model ListMembership {
   position  Int      @default(0) // per-user home-page order
   createdAt DateTime @default(now())
 
+  // Chatroom read state: unread = messages from others newer than this. Mirrors
+  // ConversationParticipant.lastReadAt but for the per-list group chat.
+  chatLastReadAt DateTime?
+
   @@unique([listId, userId])
   @@index([userId])
+}
+
+// ---- List chatrooms (see DESIGN.md) ----
+// A message in a list's group chat, shared by all the list's members. Mirrors `Message`
+// but list-scoped (the chatroom is the list; membership is the ConversationParticipant
+// analogue). Owner-only clear hard-deletes rows. `(listId, createdAt)` index keeps every
+// keyset-paginated page a cheap indexed read regardless of history length.
+model ListChatMessage {
+  id        String   @id @default(uuid())
+  listId    String
+  list      List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation("ListChatSent", fields: [senderId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([listId, createdAt])
 }
 
 // Pending/accepted invitation, keyed by email so we can invite non-users.

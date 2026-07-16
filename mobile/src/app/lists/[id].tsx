@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -19,7 +19,9 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { Ionicons } from '@expo/vector-icons';
 
 import { trpc } from '@/client/api';
+import { subscribeListChat, realtimeEnabled } from '@/client/realtime';
 import CommentsSection, { type CommentItem } from '@/components/comments-section';
+import { ListChatSheet } from '@/components/list-chat/list-chat-sheet';
 import PhotoCard from '@/components/photo-card';
 import PollRow from '@/components/poll-row';
 import TagPill from '@/components/tag-pill';
@@ -39,6 +41,8 @@ export default function ListScreen() {
   const headerHeight = useHeaderHeight();
   const sheetRef = useRef<BottomSheetModal>(null);
   const actionsSheetRef = useRef<BottomSheetModal>(null);
+  const chatSheetRef = useRef<BottomSheetModal>(null);
+  const [chatUnread, setChatUnread] = useState(0);
 
   const [bookmarks, setBookmarks] = useState<Bookmarks>([]);
   const [polls, setPolls] = useState<Polls>([]);
@@ -72,6 +76,13 @@ export default function ListScreen() {
   const loadPolls = useCallback(() => {
     if (!id) return;
     trpc.polls.forList.query({ listId: id }).then(setPolls).catch(() => {});
+  }, [id]);
+
+  // Unread chat count for the header chat-icon badge. Safe to call for non-members
+  // (the procedure returns 0 for them); the icon itself only renders for members.
+  const loadChatUnread = useCallback(() => {
+    if (!id) return;
+    trpc.listChat.unread.query({ listId: id }).then(setChatUnread).catch(() => {});
   }, [id]);
 
   // Distinct tags present across the list's bookmarks (for the filter sheet).
@@ -112,8 +123,20 @@ export default function ListScreen() {
         .then(setAccess)
         .catch(() => {});
       loadComments();
-    }, [id, loadBookmarks, loadPolls, loadComments]),
+      loadChatUnread();
+    }, [id, loadBookmarks, loadPolls, loadComments, loadChatUnread]),
   );
+
+  // Keep the chat badge live off the list's realtime channel (polling fallback).
+  useEffect(() => {
+    if (!id) return;
+    const unsub = subscribeListChat(id, loadChatUnread);
+    const iv = setInterval(loadChatUnread, realtimeEnabled() ? 20000 : 5000);
+    return () => {
+      unsub();
+      clearInterval(iv);
+    };
+  }, [id, loadChatUnread]);
 
   function confirmClear() {
     if (!id) return;
@@ -151,33 +174,43 @@ export default function ListScreen() {
       <Stack.Screen
         options={{
           headerTitle: '',
+          // The chatroom entry point. The "add bookmark" action moved to the list-name
+          // row below (louder button, before the ⋮ actions). Members only.
           headerRight: () =>
-            canEdit ? (
-              // Round "add bookmark" action; the ⋮ list actions now live on the
-              // list-name row below.
+            isMember ? (
               <Pressable
-                accessibilityLabel="Add bookmark"
+                accessibilityLabel="List chat"
                 hitSlop={8}
-                onPress={() =>
-                  router.push({
-                    pathname: '/bookmarks/new',
-                    params: { listId: id, listName: name },
-                  })
-                }
-                // Flat, borderless action: just the primary-colored glyph, no filled pill.
+                onPress={() => {
+                  setChatUnread(0);
+                  chatSheetRef.current?.present();
+                }}
                 style={{
                   width: 34,
                   height: 34,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                {/* Nudge right to counter the Ionicons "add" glyph's left side-bearing. */}
-                <Ionicons
-                  name="add"
-                  size={28}
-                  color={t.primary}
-                  style={{ marginLeft: 1 }}
-                />
+                <Ionicons name="chatbubbles-outline" size={24} color={t.primary} />
+                {chatUnread > 0 && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -2,
+                      right: -4,
+                      minWidth: 16,
+                      height: 16,
+                      borderRadius: 8,
+                      paddingHorizontal: 3,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: t.danger,
+                    }}>
+                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+                      {chatUnread > 99 ? '99+' : chatUnread}
+                    </Text>
+                  </View>
+                )}
               </Pressable>
             ) : null,
         }}
@@ -199,18 +232,38 @@ export default function ListScreen() {
         }}
         ListHeaderComponent={
           <View className="gap-3 pb-1">
-            <View className="flex-row items-start justify-between gap-3">
+            <View className="flex-row items-center justify-between gap-3">
               <Text className="flex-1 font-serif text-3xl text-ink">
                 {name ?? 'List'}
               </Text>
               {isMember && (
-                <Pressable
-                  accessibilityLabel="List actions"
-                  hitSlop={8}
-                  onPress={() => actionsSheetRef.current?.present()}
-                  className="p-1">
-                  <Ionicons name="ellipsis-vertical" size={22} color={t.ink} />
-                </Pressable>
+                <View className="flex-row items-center gap-2">
+                  {canEdit && (
+                    // Louder filled "New bookmark" action, before the ⋮ list actions.
+                    <Pressable
+                      accessibilityLabel="Add bookmark"
+                      hitSlop={8}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/bookmarks/new',
+                          params: { listId: id, listName: name },
+                        })
+                      }
+                      className="flex-row items-center gap-1 rounded-full bg-primary px-3 py-1.5">
+                      <Ionicons name="add" size={16} color={t.primaryInk} />
+                      <Text className="font-sans-semibold text-sm text-primary-ink">
+                        New
+                      </Text>
+                    </Pressable>
+                  )}
+                  <Pressable
+                    accessibilityLabel="List actions"
+                    hitSlop={8}
+                    onPress={() => actionsSheetRef.current?.present()}
+                    className="p-1">
+                    <Ionicons name="ellipsis-vertical" size={22} color={t.ink} />
+                  </Pressable>
+                </View>
               )}
             </View>
 
@@ -502,6 +555,16 @@ export default function ListScreen() {
           )}
         </BottomSheetView>
       </BottomSheetModal>
+
+      {isMember && id && (
+        <ListChatSheet
+          ref={chatSheetRef}
+          listId={id}
+          isOwner={isOwner}
+          canSend={isMember}
+          onRead={() => setChatUnread(0)}
+        />
+      )}
     </View>
   );
 }
