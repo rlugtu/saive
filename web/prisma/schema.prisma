@@ -68,6 +68,9 @@ model User {
 
   friendRequestsSent     Friendship[] @relation("FriendRequester")
   friendRequestsReceived Friendship[] @relation("FriendAddressee")
+
+  conversations ConversationParticipant[] @relation("UserConversations")
+  messagesSent  Message[]                 @relation("MessagesSent")
 }
 
 // A friendship between two users. Directed request (requester -> addressee) that
@@ -83,6 +86,51 @@ model Friendship {
 
   @@unique([requesterId, addresseeId])
   @@index([addresseeId])
+}
+
+// ---- Direct messaging (see DESIGN.md) ----
+// A 1:1 private thread. Independent of Friendship (no cascade on unfriend) so history
+// survives; sending is gated on a live friendship at write time. `pairKey` is the two
+// participant ids sorted + joined — its unique constraint makes get-or-create atomic.
+model Conversation {
+  id            String   @id @default(uuid())
+  pairKey       String   @unique
+  createdAt     DateTime @default(now())
+  lastMessageAt DateTime @default(now())
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([lastMessageAt])
+}
+
+// Per-user state on a conversation (mirrors the ListMembership participant-row pattern).
+// `clearedAt`: messages at/before it are hidden from this user (drives clear + delete;
+// thread reappears on newer activity). `lastReadAt`: unread = the other user's messages
+// newer than this (and newer than clearedAt).
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation("UserConversations", fields: [userId], references: [id], onDelete: Cascade)
+  clearedAt      DateTime?
+  lastReadAt     DateTime?
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("MessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
 }
 
 // ---- better-auth managed models (generated via @better-auth/cli) ----

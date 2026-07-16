@@ -43,6 +43,10 @@ with a link or a location.
   read-only and it shows up on your profile — editing still needs an invite.
 - **Add friends.** Add people by their **@handle** and, once they accept, bulk-invite a friend to any
   of your lists in one step.
+- **Message your friends.** Chat privately 1:1 with any friend — a **Messages** tab sits right next to
+  your friends list, with an inbox that flags unread chats. Conversations load instantly and new
+  messages arrive in real time. Delete a chat to clear it from your side; if the friendship ends the
+  history stays readable but you can't send until you're friends again.
 - **Show off a profile.** Everyone has a profile page with their photo/icon, stats, and public
   lists — visit a friend's or a list owner's profile and add them as a friend right there.
 - **Comment together.** Leave comments on lists and individual bookmarks to plan and discuss.
@@ -161,6 +165,7 @@ never trapped on the wrong screen.
 | Ratings / Visited / Notes | ✅ | ✅ | |
 | Sharing & permissions | ✅ | ✅ | Owner / Collaborator / Viewer; **request-based** invites (invitee approves/rejects) |
 | Friends | ✅ | ✅ | Add by **@handle** (request + accept); bulk-add a friend to your lists |
+| Direct messages | ✅ | ✅ | Friends-only 1:1 chat; Friends\|Messages tab switch + unread badge; paginated history; near-real-time (Supabase Realtime, polling fallback); per-user clear/delete; unfriend keeps history but blocks sending (`dms.*`) |
 | User profiles | ✅ | ✅ | `/users/[handle]` (web) · Profile tab + `users/[handle]` (mobile), resolvable by @handle or id; identity + stats + public lists + add-friend (`profile.get`) |
 | Comments (lists & bookmarks) | ✅ | ✅ | |
 | Polls | ✅ | ✅ | Create / vote / edit / delete |
@@ -360,6 +365,28 @@ opens an **actions panel**: a **Remove** (confirm dialog) + **View profile** row
 **Add to lists** section.
 **Differences.** UI only — mobile packs remove / view-profile / add-to-lists into one tap-to-expand
 actions panel; web keeps separate row controls. Logic is server-side and shared.
+
+### Direct messages
+**Description.** Private **1:1 chat between friends**. A **Friends | Messages** tab switch tops the
+Friends page in both apps. The **Messages** view is an inbox: each conversation shows the other user's
+@handle/icon, a last-message preview, a relative timestamp, and an **unread dot**; the Messages tab
+itself carries an **unread-count attention badge**. **New chat** picks a friend to open (or resume) a
+thread. A thread shows history oldest→newest with **Load older** (keyset pagination — cheap indexed
+reads regardless of length) and a composer. New messages arrive **near-instantly** (Supabase Realtime
+broadcast used as a content-free "refetch" ping; all data still flows over authenticated tRPC, and it
+**degrades to polling** when unconfigured). **Deleting/clearing** a chat sets your `clearedAt`, hiding
+it + its past messages from **you only**; it reappears on the next incoming message showing only newer
+messages. Starting a chat and sending both require a **live friendship** — unfriending disables the
+composer (with a note) but the history stays readable; re-friending re-enables sending.
+**Web.** `/friends/dms` inbox (`DmInbox`) + `/friends/dms/new` (friend picker) + `/friends/dms/[conversationId]`
+thread (`DmThread`); shared `FriendsTabs` tab header. Interactive islands read/write through
+`lib/actions/dms.ts` server actions (web has no browser tRPC client); realtime via
+`lib/realtime/client.ts`.
+**Mobile.** The DMs view is an **in-screen tab** on `src/app/(tabs)/friends.tsx` (`SegmentedTabs` +
+`components/dms/dm-inbox.tsx`); threads are pushed routes `src/app/dm/[conversationId].tsx` and
+`src/app/dm/new.tsx`, consuming the `dms.*` tRPC procedures; realtime via `src/client/realtime.ts`.
+**Differences.** UI only — web uses separate routes for the inbox/thread with a tab header; mobile uses
+an in-screen segmented switch + pushed thread screens. All logic (`dms.*` / `core/dms`) is shared.
 
 ### User profiles
 **Description.** Every user has a public **profile** — avatar (uploaded image, else emoji icon),

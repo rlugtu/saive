@@ -171,7 +171,8 @@ a centered title anywhere in the app**.
 - **Stack screens**: `lists/[id]` (list detail), `lists/members`, `bookmarks/[id]` (detail),
   `users/[id]` (another user's profile, pushed from friend rows), `requests` (incoming list-join
   requests), `friend-requests` (incoming friend requests), `pending-requests` (outgoing friend
-  requests you've sent — cancel to withdraw).
+  requests you've sent — cancel to withdraw), `dm/[conversationId]` (a DM chat thread) and `dm/new`
+  (friend picker to start a chat).
 - **Modal screens**: `lists/new`, `lists/edit`, `bookmarks/new`, `bookmarks/edit`.
 - **`+native-intent.tsx`** — `redirectSystemPath` intercepts the Share Extension's re-open deep link
   (`klect://dataUrl=<key>…`, not a real route) and rewrites it to `/`, so expo-router doesn't render
@@ -197,12 +198,21 @@ modal with `router.back()` (or `router.dismissAll()` after leaving a list).
   lives in the list header) and drop keyboard focus. Cards carry the `cardShadow`.
 - **List requests** (`requests.tsx`) — all open incoming list-join requests
   (`sharing.incomingRequests`) with approve/reject (`approveRequest`/`rejectRequest`).
-- **Friends** (`(tabs)/friends.tsx`) — add a friend by email (`friends.sendRequest`), the **Pending**
-  + **Requests** pills, and your friends list. Each `FriendCard` is **tap-to-expand** (chevron
-  affordance): pressing the row opens an **actions panel** with a **Remove** (→ `Alert` confirm →
-  `friends.remove`) + **View profile** (→ pushed `users/[id]`) row above an **Add to lists**
-  multiselect (list chips + Viewer/Collaborator role → `friends.addToLists`; chips pre-selected via
-  `friends.friendListIds`).
+- **Friends** (`(tabs)/friends.tsx`) — a **Friends | Messages** segmented switch (`SegmentedTabs`,
+  with an unread badge on Messages) tops the screen. **Friends** view: add a friend by @handle
+  (`friends.sendRequest`), the **Pending** + **Requests** pills, and your friends list. Each
+  `FriendCard` is **tap-to-expand** (chevron affordance): pressing the row opens an **actions panel**
+  with a **Remove** (→ `Alert` confirm → `friends.remove`) + **View profile** (→ pushed `users/[id]`)
+  row above an **Add to lists** multiselect (list chips + Viewer/Collaborator role →
+  `friends.addToLists`; chips pre-selected via `friends.friendListIds`).
+- **Direct messages** — the **Messages** segment renders `components/dms/dm-inbox.tsx`
+  (`dms.conversations`): a `FlatList` of chats with unread dot + last-message preview + timestamp,
+  **swipe-free delete** (`Alert` → `dms.clear`), and a **New chat** button → `dm/new` (friend picker
+  → `dms.start`). A chat thread (`dm/[conversationId].tsx`) loads history via `dms.messages` (keyset
+  cursor, **Load older**), sends via `dms.send`, marks read on focus (`dms.markRead`), and disables
+  the composer when the friendship has ended. New messages arrive via `client/realtime.ts`
+  (Supabase broadcast) or focus/interval polling. The DMs unread total drives the segment badge
+  (`dms.unreadCount`, refreshed on focus + realtime).
 - **Friend requests** (`friend-requests.tsx`) — all incoming friend requests (`friends.list().incoming`)
   with accept/decline (`friends.accept`/`friends.decline`). Reached from a compact **Requests** pill
   below the Friends header — the trailing pill in a `justify-between` row.

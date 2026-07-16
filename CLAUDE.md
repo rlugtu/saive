@@ -16,6 +16,10 @@ auto-added). Every user has a required, unique **@handle** (lowercase; the `@` i
 their public identity, shown everywhere a user is mentioned (comments, members, friends, search,
 polls, profiles) in place of any name/email; users are invited and friended **by handle**. Users can
 add each other as **friends** (`/friends`, request + accept) and bulk-invite a friend to their lists.
+Friends can **direct-message** each other 1:1 (`/friends/dms`): a Friends|Messages tab switch, a DM
+inbox with unread badges, paginated history, near-real-time delivery (Supabase Realtime, polling
+fallback), and per-user clear/delete; sending requires a live friendship (unfriending stops new
+messages but history stays readable).
 Every user has a **profile** (`/users/[handle]`, also resolvable by id) showing their identity, stats,
 and public lists, with an add-friend action; reachable from a Profile nav button.
 Lists and bookmarks both support **comments**. Pasting a link auto-fills a bookmark from page metadata (and

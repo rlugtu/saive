@@ -121,6 +121,20 @@ Friendship      id, requesterId, addresseeId, status (PENDING|ACCEPTED), created
                 — unique per (requesterId, addresseeId); a directed friend request that
                   becomes mutual on ACCEPTED. "My friends" = ACCEPTED rows on either side.
 
+Conversation    id, pairKey (unique), lastMessageAt, createdAt
+                — a 1:1 direct-message thread. pairKey = the two user ids sorted + joined,
+                  so get-or-create is atomic/race-safe. lastMessageAt is denormalized for
+                  inbox sort. Independent of Friendship (no cascade on unfriend) → history
+                  survives; sending is gated on a *live* friendship at write time.
+ConversationParticipant
+                id, conversationId, userId, clearedAt?, lastReadAt?
+                — one row per member (mirrors ListMembership). clearedAt hides messages
+                  at/before it from that user (drives clear + delete; the thread reappears
+                  on newer activity). lastReadAt drives the unread flag. unique per
+                  (conversationId, userId).
+Message         id, conversationId, senderId, body, createdAt
+                — indexed on (conversationId, createdAt) for keyset pagination.
+
 Bookmark        id, listId, name, description, urls (string[]),
                 images (string[]), notes, location, latitude?, longitude?,
                 rating (0–5), visited (bool), videoUrl, videoType,
@@ -157,7 +171,13 @@ PollVote        id, pollId, optionId, userId — unique per (optionId, userId); 
   home-page "collab requests" section. Inviting a non-friend also offers to send a friend request.
 - **Friends** (`Friendship`) are added by **@handle** as a PENDING request the addressee accepts.
   Friends can be bulk-added to lists (which sends per-list join requests) from the Friends page.
-- Deleting a user cascades their friendships (both sides).
+- **Direct messages** (`Conversation` / `Message`): friends can privately message each other 1:1.
+  Opening a chat and sending both require a *live* ACCEPTED friendship; unfriending stops new
+  messages but the thread + history remain readable (re-friending re-enables sending). **Clearing**
+  (a.k.a. deleting) a chat sets the user's `clearedAt`, hiding it + its past messages from **them
+  only**; a later message reappears the thread showing only messages after the clear. History
+  **paginates** via a keyset cursor on `(createdAt, id)`.
+- Deleting a user cascades their friendships (both sides), conversation participation, and messages.
 - Tags are user-scoped and shared across all of a user's lists (OR-matching in filters).
 - Deleting a list cascades its bookmarks, comments, memberships, invites, **and polls**.
 - Deleting a bookmark cascades its `BookmarkTag` links, comments, **and poll options** (each
@@ -183,6 +203,8 @@ PollVote        id, pollId, optionId, userId — unique per (optionId, userId); 
 | Approve / reject a join request addressed to you | invitee only | invitee only | invitee only |
 | Delete list | ✓ | — | — |
 | Add/accept/remove friends; add a friend to your lists | any signed-in user (self) | | |
+| Start a chat / send a DM | current friends only (live friendship re-checked per message) | | |
+| Read DM history / clear (delete) a chat | either participant (clear affects only you) | | |
 | Delete a comment | own + any on their list | own only | own only |
 | Reorder lists on **own** home page | ✓ | ✓ | ✓ |
 | Create a poll | ✓ | ✓ | — |
@@ -213,6 +235,9 @@ helper — never rely on UI gating alone. Read-only public access uses `assertCa
 | `/friends` | **Friends**: add friends by **@handle**; always-visible **Requests** link → `/friends/requests` and **Pending** link → `/friends/pending`; friends list — each row can **remove** the friend, open their **profile**, and **add** them to a multiselect of your lists + role → send join requests (mobile packs these into one tap-to-expand actions panel; web uses row controls) |
 | `/friends/requests` | **Friend requests**: all incoming friend requests, accept/decline (empty state when none) |
 | `/friends/pending` | **Pending requests**: outgoing friend requests you've sent, withdraw each (empty state when none) |
+| `/friends/dms` | **Messages**: the DM inbox — a Friends \| Messages tab switch tops both pages; lists conversations (unread dot + last-message preview), each deletable (clears it for you); **New chat** starts one with a friend. The Messages tab shows an unread-count attention badge. |
+| `/friends/dms/new` | **New chat**: pick a friend to open (or resume) a 1:1 conversation |
+| `/friends/dms/[conversationId]` | **Chat thread**: message history (older loads on demand via keyset cursor) + composer; composer is disabled with a note when you're no longer friends. Mobile equivalents: the DMs view is an in-screen tab on the Friends screen; threads are `/dm/[conversationId]` and `/dm/new`. |
 | `/nearby` | **Near me**: find geocoded bookmarks within a chosen radius of your current location, closest→farthest |
 | `/bookmarks/new` | **New bookmark**: standalone create flow; pick/create one or more target lists and add the bookmark independently to each. Reached from a **＋ Bookmark** item in the primary nav (web home header · mobile tab bar) |
 | `/lists/[id]` | Bookmarks in a list; filter/search within; list-level comments; invite UI (owner) |
@@ -287,6 +312,12 @@ The capabilities the app ships today. Product-level coverage (and web/mobile par
 - **Friends** — **@handle**-based friend requests the addressee accepts (mutual once accepted), with
   incoming/outgoing (withdrawable) request views. A friend row can remove the friend, open their
   profile, and bulk-add them to a multiselect of your lists + role (per-list join requests).
+- **Direct messages** — private 1:1 chat between friends. A **Friends | Messages** tab switch tops
+  the Friends page (web + mobile); the DM inbox lists conversations (unread dot + preview, deletable),
+  and the Messages tab carries an unread-count attention badge. Threads paginate history on demand,
+  disable the composer when you're no longer friends (history stays readable), and deliver new
+  messages in near-real-time (Supabase Realtime broadcast, polling fallback). Clearing/deleting a
+  chat only affects you; it reappears on the next incoming message showing only newer messages.
 - **Profiles** (`/users/[handle]`, also resolvable by id) — identity (@handle, avatar/icon, "member
   since"), stats (public lists · friends), and the user's public lists, with an add-friend action on
   others' profiles.
@@ -456,6 +487,13 @@ release builds don't reliably persist `Secure` cookies. `auth.api.getSession()` 
 | `friends.cancel` | mutation | `{ id }` | requester (in core) | `core/friends.cancelFriendRequest` — withdraw a pending request you sent |
 | `friends.remove` | mutation | `{ id }` | either party (in core) | `core/friends.removeFriend` |
 | `friends.addToLists` | mutation | `{ friendId, listIds, role }` | OWNER per list (in core) | `core.addFriendToLists` |
+| `dms.conversations` | query | – | self | `getConversations` — inbox: other participant + last-message preview + `unread`, cleared-empty threads omitted |
+| `dms.messages` | query | `{ conversationId, cursor?, limit? }` | participant (in data access) | `getMessages` — keyset page (oldest→newest) + `nextCursor` + `other` + `canSend` (live friendship) |
+| `dms.unreadCount` | query | – | self | `getUnreadConversationCount` — drives the Messages tab badge |
+| `dms.start` | mutation | `{ userId }` | **friends only** (in core) | `core/dms.startConversation` — get-or-create the 1:1 thread (atomic via `pairKey`) |
+| `dms.send` | mutation | `{ conversationId, body }` | participant + **live friendship** (in core) | `core/dms.sendMessage` — returns `{ message }` or `{ error }`; bumps `lastMessageAt`, fires a realtime ping |
+| `dms.clear` | mutation | `{ conversationId }` | participant (self only) | `core/dms.clearConversation` — clears/deletes the thread for the caller |
+| `dms.markRead` | mutation | `{ conversationId }` | participant (self only) | `core/dms.markRead` |
 | `profile.update` | mutation | `ProfileInput` | self | `core.saveProfile` |
 | `profile.get` | query | `{ handleOrId }` | signed-in (public data only) | `getPublicProfile` — resolves by @handle or id; identity + public lists + friend count + viewer↔target friendship state |
 | `tags.mine` | query | – | user-scoped | `getUserTags` |
@@ -469,6 +507,15 @@ release builds don't reliably persist `Secure` cookies. `auth.api.getSession()` 
 The external-service lookups (`places` — Mapbox, `metadata` — LinkPreview/Microlink + Anthropic, `comprehend` — Anthropic)
 run server-side so mobile gets autocomplete/autofill/AI-extract without shipping any API keys; the
 secrets stay in `web/`'s env.
+
+**DM realtime:** new messages are delivered near-instantly via **Supabase Realtime broadcast** —
+already in-stack (Postgres is Supabase-hosted), which suits serverless (Vercel can't hold sockets)
+and better-auth (not Supabase Auth). The server posts a tiny **content-free ping** (just the
+conversation id) to public channels `dm:user:<recipientId>` and `dm:conv:<conversationId>`; clients
+treat it purely as a "refetch now" trigger and pull the actual data over the authenticated tRPC
+procedures above, so no message content rides the socket and a spoofed/missed ping is harmless. The
+whole path **degrades to polling** when the Supabase env vars are unset (`SUPABASE_URL` /
+`SUPABASE_ANON_KEY` server-side; `NEXT_PUBLIC_SUPABASE_*` / `EXPO_PUBLIC_SUPABASE_*` on the clients).
 
 ---
 

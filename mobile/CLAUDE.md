@@ -27,6 +27,13 @@ mobile-specific implementation only.
   store it, so it only breaks in TestFlight/store builds, not dev). Two capture paths, both required:
   email/password → the `set-auth-token` response header; Google OAuth → parsed from the stored
   cookie (`getCookie()`). **Don't revert to a `Cookie` header.** Full rationale: `docs/ARCHITECTURE.md` Auth.
+- **Realtime (DMs)**: `src/client/realtime.ts` uses **`@supabase/supabase-js`** to subscribe to
+  Supabase Realtime broadcast channels (`dm:user:<id>` / `dm:conv:<id>`) purely as a "refetch now"
+  signal — no message content on the socket; actual DM data comes over the `dms.*` tRPC procedures.
+  Env: `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY`; **degrades to focus/interval
+  polling** when unset. DM UI: an in-screen Friends|DMs segmented switch on `(tabs)/friends.tsx`
+  (`components/dms/dm-inbox.tsx`) + pushed thread screens `src/app/dm/[conversationId].tsx` &
+  `src/app/dm/new.tsx`.
 - Never add business logic or direct DB access here — new backend work lands once in `web/` (see the
   per-feature workflow in `../CLAUDE.md`), then you build the screen consuming the procedure.
 

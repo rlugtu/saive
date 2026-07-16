@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,12 +13,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { trpc } from '@/client/api';
+import { authClient } from '@/client/auth';
+import { subscribeDm, realtimeEnabled } from '@/client/realtime';
 import { atHandle } from '@/lib/handle';
 import FloatingStatusBar from '@/components/floating-status-bar';
+import { DmInbox } from '@/components/dms/dm-inbox';
 import { useTheme } from '@/theme/theme-provider';
-import { THEME_TOKENS } from '@/theme/tokens';
+import { THEME_TOKENS, type ThemeName } from '@/theme/tokens';
 import { cardShadow } from '@/theme/shadows';
 import { useTabBarScrollHandler } from '@/theme/tab-bar-scroll';
+
+type DmTab = 'friends' | 'dms';
 
 // Inferred straight from web's tRPC procedures — no hand-written DTOs.
 type FriendsData = Awaited<ReturnType<typeof trpc.friends.list.query>>;
@@ -28,11 +33,15 @@ type InviteRole = 'VIEWER' | 'COLLABORATOR';
 
 export default function FriendsScreen() {
   const { theme } = useTheme();
-  const muted = THEME_TOKENS[theme].muted;
+  const t = THEME_TOKENS[theme];
+  const muted = t.muted;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const onScroll = useTabBarScrollHandler();
+  const myId = authClient.useSession().data?.user.id ?? '';
 
+  const [tab, setTab] = useState<DmTab>('friends');
+  const [dmUnread, setDmUnread] = useState(0);
   const [data, setData] = useState<FriendsData>({
     friends: [],
     incoming: [],
@@ -56,9 +65,23 @@ export default function FriendsScreen() {
       .catch(() => {})
       .finally(() => setLoaded(true));
     trpc.lists.mine.query().then(setLists).catch(() => {});
+    trpc.dms.unreadCount.query().then(setDmUnread).catch(() => {});
   }, []);
 
   useFocusEffect(useCallback(() => load(), [load]));
+
+  // Keep the DMs attention badge fresh from anywhere in the tab (realtime + poll fallback).
+  useEffect(() => {
+    if (!myId) return;
+    const refresh = () =>
+      trpc.dms.unreadCount.query().then(setDmUnread).catch(() => {});
+    const unsub = subscribeDm(`dm:user:${myId}`, refresh);
+    const id = setInterval(refresh, realtimeEnabled() ? 20000 : 5000);
+    return () => {
+      unsub();
+      clearInterval(id);
+    };
+  }, [myId]);
 
   async function addFriend() {
     if (!handle.trim()) return;
@@ -89,21 +112,33 @@ export default function FriendsScreen() {
     ]);
   }
 
+  const segmented = (
+    <SegmentedTabs tab={tab} onChange={setTab} unread={dmUnread} theme={theme} />
+  );
+
   return (
     <SafeAreaView
       style={{ flex: 1 }}
       edges={['left', 'right']}
       className="bg-bg">
-      <Animated.ScrollView
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        contentContainerStyle={{
-          padding: 16,
-          paddingTop: insets.top + 16,
-          paddingBottom: 120,
-          gap: 20,
-        }}>
-        <Text className="font-serif text-3xl text-ink">Friends</Text>
+      {tab === 'dms' ? (
+        <DmInbox
+          myId={myId}
+          header={segmented}
+          onScroll={onScroll}
+          onCounts={setDmUnread}
+        />
+      ) : (
+        <Animated.ScrollView
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={{
+            padding: 16,
+            paddingTop: insets.top + 16,
+            paddingBottom: 120,
+            gap: 20,
+          }}>
+          {segmented}
 
         {/* Pending and Requests pushed to opposite edges so they read as a pair of
             balanced actions rather than a left-packed cluster. */}
@@ -181,9 +216,63 @@ export default function FriendsScreen() {
             />
           ))}
         </View>
-      </Animated.ScrollView>
+        </Animated.ScrollView>
+      )}
       <FloatingStatusBar />
     </SafeAreaView>
+  );
+}
+
+/** Friends | Messages switch; the Messages segment carries the unread attention badge. */
+function SegmentedTabs({
+  tab,
+  onChange,
+  unread,
+  theme,
+}: {
+  tab: DmTab;
+  onChange: (t: DmTab) => void;
+  unread: number;
+  theme: ThemeName;
+}) {
+  const t = THEME_TOKENS[theme];
+  const items: { key: DmTab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { key: 'friends', label: 'Friends', icon: 'people-outline' },
+    { key: 'dms', label: 'Messages', icon: 'chatbubbles-outline' },
+  ];
+  return (
+    <View className="flex-row gap-1 rounded-skin border-skin border-border bg-panel p-1">
+      {items.map((it) => {
+        const on = tab === it.key;
+        return (
+          <Pressable
+            key={it.key}
+            onPress={() => onChange(it.key)}
+            className={`flex-1 flex-row items-center justify-center gap-2 rounded-skin-sm py-2.5 ${
+              on ? 'bg-primary' : ''
+            }`}>
+            <Ionicons
+              name={it.icon}
+              size={16}
+              color={on ? t.primaryInk : t.muted}
+            />
+            <Text
+              className={
+                on ? 'font-sans-semibold text-primary-ink' : 'font-sans-medium text-muted'
+              }>
+              {it.label}
+            </Text>
+            {it.key === 'dms' && unread > 0 && (
+              <View className="items-center rounded-full bg-accent px-1.5 py-0.5">
+                <Text className="font-sans-semibold text-xs text-primary-ink">
+                  {unread}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 

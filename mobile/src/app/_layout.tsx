@@ -103,6 +103,8 @@ function AppStack() {
       <Stack.Screen name="requests" options={{ ...blankTitle }} />
       <Stack.Screen name="friend-requests" options={{ ...transparentHeader }} />
       <Stack.Screen name="pending-requests" options={{ ...transparentHeader }} />
+      <Stack.Screen name="dm/[conversationId]" options={{ ...blankTitle }} />
+      <Stack.Screen name="dm/new" options={{ ...transparentHeader }} />
     </Stack>
     </>
   );

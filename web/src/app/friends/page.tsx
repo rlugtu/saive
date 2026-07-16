@@ -7,19 +7,22 @@ import {
   getOutgoingFriendRequests,
   getFriendsListIds,
 } from "@/lib/friends";
+import { getUnreadConversationCount } from "@/lib/dms";
 import { AddFriendForm } from "@/components/friends/AddFriendForm";
 import { FriendRow } from "@/components/friends/FriendRow";
+import { FriendsTabs } from "@/components/friends/FriendsTabs";
 import { PixelButton } from "@/components/ui/PixelButton";
 import { PixelBadge } from "@/components/ui/PixelBadge";
 import { ArrowLeft, Inbox, Clock } from "lucide-react";
 
 export default async function FriendsPage() {
   const user = await requireOnboardedUser();
-  const [friends, incoming, outgoing, memberships] = await Promise.all([
+  const [friends, incoming, outgoing, memberships, unread] = await Promise.all([
     getFriends(user.id),
     getIncomingFriendRequests(user.id),
     getOutgoingFriendRequests(user.id),
     getUserLists(user.id),
+    getUnreadConversationCount(user.id),
   ]);
 
   // Only lists the user OWNS can receive invites (addFriendToLists asserts OWNER).
@@ -62,6 +65,8 @@ export default async function FriendsPage() {
           </PixelButton>
         </Link>
       </header>
+
+      <FriendsTabs active="friends" myId={user.id} initialUnread={unread} />
 
       <AddFriendForm />
 
