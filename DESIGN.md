@@ -415,6 +415,8 @@ release builds don't reliably persist `Secure` cookies. `auth.api.getSession()` 
 | `lists.delete` | mutation | `{ listId }` | OWNER (in core) | `core.deleteList` |
 | `lists.setVisibility` | mutation | `{ listId, isPublic }` | OWNER (in core) | `core.setListVisibility` |
 | `lists.reorder` | mutation | `{ orderedListIds }` | user-scoped | `core.reorderLists` |
+| `lists.duplicate` | mutation | `{ listId, name? }` | member VIEWER+ (in core) | `core.duplicateList` — new owner copy, bookmarks+tags only (no members/polls/comments); private; returns the new list |
+| `lists.clearBookmarks` | mutation | `{ listId }` | OWNER (in core) | `core.clearListBookmarks` — deletes all bookmarks (cascades tags/comments/poll options) |
 | `bookmarks.forList` | query | `{ listId }` | `assertCanView` (member **or** public list) | `getBookmarksForList` |
 | `bookmarks.get` | query | `{ bookmarkId }` | member or public list (or null) | `getBookmarkForUser` |
 | `bookmarks.byTags` | query | `{ tagNames }` | user-scoped | `getBookmarksByTags` |

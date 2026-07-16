@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import * as core from "@/lib/core/lists";
+import {
+  duplicateList as duplicateListCore,
+  clearListBookmarks as clearListBookmarksCore,
+} from "@/lib/core/bookmarks";
 
 function listInputFromFormData(formData: FormData): core.ListInput {
   return {
@@ -52,4 +56,24 @@ export async function reorderLists(orderedListIds: string[]) {
   await core.reorderLists(user.id, orderedListIds);
 
   revalidatePath("/");
+}
+
+export async function duplicateList(sourceListId: string, formData: FormData) {
+  const user = await requireUser();
+  const list = await duplicateListCore(
+    user.id,
+    sourceListId,
+    String(formData.get("name") ?? ""),
+  );
+
+  revalidatePath("/");
+  redirect(`/lists/${list.id}`);
+}
+
+export async function clearListBookmarks(listId: string) {
+  const user = await requireUser();
+  await clearListBookmarksCore(user.id, listId);
+
+  revalidatePath("/");
+  revalidatePath(`/lists/${listId}`);
 }

@@ -3,6 +3,7 @@ import { router, protectedProcedure } from "../trpc";
 import { listInput } from "../inputs";
 import { getUserLists, getListForViewer } from "@/lib/lists";
 import * as core from "@/lib/core/lists";
+import { duplicateList, clearListBookmarks } from "@/lib/core/bookmarks";
 
 export const listsRouter = router({
   /** All lists the user participates in, in their personal order. */
@@ -41,5 +42,23 @@ export const listsRouter = router({
     .input(z.object({ orderedListIds: z.array(z.string()) }))
     .mutation(({ ctx, input }) =>
       core.reorderLists(ctx.user.id, input.orderedListIds),
+    ),
+
+  /**
+   * Fork a list into a new owner copy (bookmarks + tags only — no members,
+   * polls, or comments; private). Requires membership on the source. Returns the
+   * new list so the caller can navigate to it.
+   */
+  duplicate: protectedProcedure
+    .input(z.object({ listId: z.string(), name: z.string().optional() }))
+    .mutation(({ ctx, input }) =>
+      duplicateList(ctx.user.id, input.listId, input.name ?? ""),
+    ),
+
+  /** Delete all bookmarks in a list — owner only. */
+  clearBookmarks: protectedProcedure
+    .input(z.object({ listId: z.string() }))
+    .mutation(({ ctx, input }) =>
+      clearListBookmarks(ctx.user.id, input.listId),
     ),
 });

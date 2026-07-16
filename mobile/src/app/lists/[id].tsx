@@ -166,13 +166,13 @@ export default function ListScreen() {
             </View>
 
             {isMember && (
-              <View className="flex-row gap-2">
+              <View className="flex-row flex-wrap gap-2">
                 {canEdit && (
                   <Pressable
                     onPress={() =>
                       router.push({ pathname: '/lists/edit', params: { id } })
                     }
-                    className="flex-1 items-center rounded-skin border-skin border-border py-3">
+                    className="min-w-[45%] flex-1 items-center rounded-skin border-skin border-border py-3">
                     <Text className="font-sans text-ink">Edit list</Text>
                   </Pressable>
                 )}
@@ -180,15 +180,22 @@ export default function ListScreen() {
                   onPress={() =>
                     router.push({ pathname: '/lists/members', params: { id, name } })
                   }
-                  className="flex-1 items-center rounded-skin border-skin border-border py-3">
+                  className="min-w-[45%] flex-1 items-center rounded-skin border-skin border-border py-3">
                   <Text className="font-sans text-ink">Members</Text>
                 </Pressable>
                 <Pressable
                   onPress={() =>
                     router.push({ pathname: '/polls', params: { listId: id, listName: name } })
                   }
-                  className="flex-1 items-center rounded-skin border-skin border-border py-3">
+                  className="min-w-[45%] flex-1 items-center rounded-skin border-skin border-border py-3">
                   <Text className="font-sans text-ink">Polls</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    router.push({ pathname: '/lists/actions', params: { id, name } })
+                  }
+                  className="min-w-[45%] flex-1 items-center rounded-skin border-skin border-border py-3">
+                  <Text className="font-sans text-ink">Actions</Text>
                 </Pressable>
               </View>
             )}

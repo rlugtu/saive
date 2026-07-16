@@ -150,6 +150,7 @@ never trapped on the wrong screen.
 | Lists — CRUD | ✅ | ✅ | |
 | Lists — public/private visibility | ✅ | ✅ | Owner-only toggle; **private by default**; public = read-only for anyone (`lists.setVisibility`) |
 | Lists — drag-reorder | ✅ | ✅ | Per-user order (`lists.reorder`); web: Framer Motion · mobile: long-press drag (`react-native-reorderable-list`) |
+| Lists — actions (duplicate / clear) | ✅ | ✅ | Duplicate = new owner copy, bookmarks+tags only, any member (`lists.duplicate`) · Clear = delete all bookmarks, owner only (`lists.clearBookmarks`) |
 | Home search | ⚠️ | ⚠️ | Web: unified list + cross-list tag filter · Mobile: local name search |
 | Bookmarks — CRUD & fields | ✅ | ✅ | URLs, images, notes, rating, visited, location, tags |
 | Standalone multi-list bookmark create | ✅ | ✅ | One independent copy per selected list |
@@ -223,6 +224,21 @@ mutations stay gated by `assertRole`. Toggling is separate from list edit — `l
 card to drag; `onReorder` optimistically updates then persists `lists.reorder`. Dragging is
 disabled while a search query is active (reordering a filtered subset is ambiguous).
 **Differences.** Same procedure + persistence; different drag implementation per platform.
+
+### Lists — actions (duplicate / clear)
+**Description.** An **Actions** entry point (alongside Edit / Members / Polls on a list) with two
+list-level operations. **Duplicate** forks the list into a brand-new, fully independent copy owned
+by whoever duplicates it — only the **bookmarks (with their tags)** are cloned; members, invites,
+polls, and comments are not carried over, and the copy is private. Any **member** (viewer+) can
+duplicate; the user picks a name (defaulting to `Copy of {name}`). **Clear** deletes every bookmark
+in the list and is **owner-only** (cascades tags/comments/poll options).
+**Web.** `ListActions` panel on `/lists/[id]` (mirrors `ListControls`): a duplicate form
+(`duplicateList` action → `lists.duplicate`, redirects to the new list) and an owner-only
+`ConfirmDeleteButton` (`clearListBookmarks` action → `lists.clearBookmarks`).
+**Mobile.** `lists/actions.tsx` full-screen route (opened from the list's action row): duplicate
+field + button (`lists.duplicate`, navigates to the new list) and an owner-only clear button guarded
+by a native confirm (`lists.clearBookmarks`).
+**Differences.** Same procedures + permissions; web uses an expanding panel, mobile a pushed screen.
 
 ### Home search
 **Description.** Find lists and bookmarks from the home screen.
