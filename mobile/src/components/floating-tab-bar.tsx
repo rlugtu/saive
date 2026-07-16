@@ -2,6 +2,7 @@ import {
   Animated as RNAnimated,
   Pressable,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 import ReAnimated, {
@@ -22,6 +23,7 @@ import { useTheme } from '@/theme/theme-provider';
 import { THEME_TOKENS } from '@/theme/tokens';
 import { cardShadow } from '@/theme/shadows';
 import { useTabBarShrink } from '@/theme/tab-bar-scroll';
+import { useAttention } from '@/client/notifications';
 
 const ICON_SIZE = 26;
 /** Box the icon + concentric ring live in; the ring hugs the box edge. */
@@ -63,6 +65,9 @@ export default function FloatingTabBar({
   const insets = useSafeAreaInsets();
   const shrink = useTabBarShrink();
   const isDark = themeName.endsWith('DARK');
+  // Unread DMs + incoming friend requests → a red badge on the Friends tab.
+  const { dmUnread, friendRequests } = useAttention();
+  const friendsCount = dmUnread + friendRequests;
 
   const pillStyle = useAnimatedStyle(() => ({
     transform: [{ scale: interpolate(shrink.value, [0, 1], [1, 0.82]) }],
@@ -74,6 +79,7 @@ export default function FloatingTabBar({
     const icon = ICONS[route.name];
     if (!icon) return null;
     const focused = state.index === index;
+    const badge = route.name === 'friends' ? friendsCount : 0;
 
     // Fills as the pager position approaches this page; 1 exactly on it, 0 one page away.
     const filled = position.interpolate({
@@ -112,6 +118,11 @@ export default function FloatingTabBar({
         <RNAnimated.View style={[styles.fillLayer, { opacity: filled }]}>
           <Ionicons name={icon.filled} size={ICON_SIZE} color={t.primary} />
         </RNAnimated.View>
+        {badge > 0 && (
+          <View style={[styles.badge, { backgroundColor: t.danger }]}>
+            <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+          </View>
+        )}
       </TabButton>
     );
   };
@@ -244,5 +255,21 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

@@ -159,7 +159,11 @@ a centered title anywhere in the app**.
   shared reanimated value in `theme/tab-bar-scroll.tsx` (`TabBarScrollProvider` wraps the navigator;
   each tab's `Animated.FlatList`/`Animated.ScrollView` feeds `useTabBarScrollHandler`). Each scroll
   container pads its bottom to clear the pill. (Real blur + haptics need a native build; dev shows the
-  fallback and no haptics on the Simulator.)
+  fallback and no haptics on the Simulator.) The **Friends** tab shows a **red count badge**
+  (`t.danger`) at the top-right of its icon combining **unread DMs + incoming friend requests**; the
+  counts come from `client/notifications.tsx` (`AttentionProvider`/`useAttention`, mounted around the
+  navigator in `(tabs)/_layout.tsx`), which polls `dms.unreadCount` + `friends.list` and refetches off
+  the DM realtime channel and on app-foreground.
 - **Frosted status bar.** Tab screens drop the `top` safe-area edge, pad their scroll content by the
   top inset, and render `components/floating-status-bar.tsx` — a top-pinned strip whose glass surface
   is `components/header-blur-background.tsx` (an `expo-blur` `BlurView` masked to a top→bottom
@@ -173,7 +177,9 @@ a centered title anywhere in the app**.
   requests), `friend-requests` (incoming friend requests), `pending-requests` (outgoing friend
   requests you've sent — cancel to withdraw), `dm/[conversationId]` (a DM chat thread) and `dm/new`
   (friend picker to start a chat).
-- **Modal screens**: `lists/new`, `lists/edit`, `bookmarks/new`, `bookmarks/edit`.
+- **Modal screens**: `lists/new`, `lists/edit`, `bookmarks/new`, `bookmarks/edit`. `bookmarks/new`
+  hides the nav header (`headerShown: false`) and draws its own compact in-drawer top bar (title
+  **"New Bookmark"** + a **Cancel** that `router.back()`s) so there's no empty chevron-only header.
 - **`+native-intent.tsx`** — `redirectSystemPath` intercepts the Share Extension's re-open deep link
   (`klect://dataUrl=<key>…`, not a real route) and rewrites it to `/`, so expo-router doesn't render
   the not-found screen; the share payload is then picked up by the provider (see Share intent below).
@@ -199,18 +205,24 @@ modal with `router.back()` (or `router.dismissAll()` after leaving a list).
 - **List requests** (`requests.tsx`) — all open incoming list-join requests
   (`sharing.incomingRequests`) with approve/reject (`approveRequest`/`rejectRequest`).
 - **Friends** (`(tabs)/friends.tsx`) — a **Friends | Messages** segmented switch (`SegmentedTabs`,
-  with an unread badge on Messages) tops the screen. **Friends** view: add a friend by @handle
+  with a **red** (`t.danger`) unread badge on Messages, matching the navbar badge) tops the screen.
+  **Friends** view: add a friend by @handle
   (`friends.sendRequest`), the **Pending** + **Requests** pills, and your friends list. Each
   `FriendCard` is **tap-to-expand** (chevron affordance): pressing the row opens an **actions panel**
   with a **Remove** (→ `Alert` confirm → `friends.remove`) + **View profile** (→ pushed `users/[id]`)
   row above an **Add to lists** multiselect (list chips + Viewer/Collaborator role →
-  `friends.addToLists`; chips pre-selected via `friends.friendListIds`).
+  `friends.addToLists`). Lists the friend **already belongs to** (`friends.friendListIds`) render
+  **dimmed + checkmarked and non-tappable** — only genuinely new lists are selectable, and **Send
+  requests** is disabled until at least one new list is picked.
 - **Direct messages** — the **Messages** segment renders `components/dms/dm-inbox.tsx`
   (`dms.conversations`): a `FlatList` of chats with unread dot + last-message preview + timestamp,
   **swipe-free delete** (`Alert` → `dms.clear`), and a **New chat** button → `dm/new` (friend picker
   → `dms.start`). A chat thread (`dm/[conversationId].tsx`) loads history via `dms.messages` (keyset
   cursor, **Load older**), sends via `dms.send`, marks read on focus (`dms.markRead`), and disables
-  the composer when the friendship has ended. New messages arrive via `client/realtime.ts`
+  the composer when the friendship has ended. The thread drops the `bottom` safe-area edge and only
+  adds the home-indicator inset to the composer **when the keyboard is hidden** (a `Keyboard`
+  listener tracks visibility) so the input sits **flush on the keyboard** while typing rather than
+  floating an inset above it. New messages arrive via `client/realtime.ts`
   (Supabase broadcast) or focus/interval polling. The DMs unread total drives the segment badge
   (`dms.unreadCount`, refreshed on focus + realtime).
 - **Friend requests** (`friend-requests.tsx`) — all incoming friend requests (`friends.list().incoming`)

@@ -352,8 +352,8 @@ friend request. Non-owners can leave a shared list.
 their own unanswered requests from a **Pending** view (both apps). Friends are
 mutual once accepted. Each friend row can **remove** the friend, open the friend's **profile**, and
 **add** them to a multiselect of your lists with a Viewer/Collaborator role (→ a list-join request
-per selected list; lists they already belong to are pre-selected). Removing a friend affects both
-parties.
+per selected list; lists they already belong to are surfaced as already-shared so you don't
+re-invite them). Removing a friend affects both parties.
 **Web.** `/friends` page (`AddFriendForm`, `FriendRow`) with a **Requests** link → `/friends/requests`
 (incoming: accept/decline) and a **Pending** link → `/friends/pending` (outgoing: withdraw via
 `cancelFriendRequest`); `friends.*` procedures (`list`, `sendRequest`, `accept`, `decline`, `cancel`,
@@ -362,9 +362,12 @@ parties.
 (just under the header) → pushed `src/app/friend-requests.tsx` (incoming: accept/decline) and
 `src/app/pending-requests.tsx` (outgoing: cancel); same `friends.*` procedures. Tapping a friend row
 opens an **actions panel**: a **Remove** (confirm dialog) + **View profile** row above the
-**Add to lists** section.
+**Add to lists** section, where already-shared lists appear **dimmed + checkmarked and non-tappable**
+(only new lists are selectable; **Send requests** stays disabled until one is picked). The **Friends
+tab** also carries a **red badge** combining unread DMs + incoming friend requests.
 **Differences.** UI only — mobile packs remove / view-profile / add-to-lists into one tap-to-expand
-actions panel; web keeps separate row controls. Logic is server-side and shared.
+actions panel and shows already-shared lists as disabled chips (web pre-checks them); web keeps
+separate row controls. Logic is server-side and shared.
 
 ### Direct messages
 **Description.** Private **1:1 chat between friends**. A **Friends | Messages** tab switch tops the
