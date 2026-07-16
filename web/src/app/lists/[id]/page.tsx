@@ -7,13 +7,19 @@ import { getBookmarksForList } from "@/lib/bookmarks";
 import { getUserTags } from "@/lib/tags";
 import { getListComments } from "@/lib/comments";
 import { roleAtLeast } from "@/lib/permissions";
-import { updateList, deleteList } from "@/lib/actions/lists";
+import {
+  updateList,
+  deleteList,
+  duplicateList,
+  clearListBookmarks,
+} from "@/lib/actions/lists";
 import { leaveList } from "@/lib/actions/sharing";
 import { addListComment } from "@/lib/actions/comments";
 import { MembersPanel } from "@/components/sharing/MembersPanel";
 import { CommentSection } from "@/components/comments/CommentSection";
 import type { BookmarkCardData } from "@/lib/types";
 import { ListControls } from "@/components/lists/ListControls";
+import { ListActions } from "@/components/lists/ListActions";
 import { ListVisibilityToggle } from "@/components/lists/ListVisibilityToggle";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { CreateBookmarkPanel } from "@/components/bookmarks/CreateBookmarkPanel";
@@ -144,6 +150,15 @@ export default async function ListPage({
               <ListVisibilityToggle listId={id} isPublic={list.isPublic} />
             ) : undefined
           }
+        />
+      )}
+
+      {isMember && (
+        <ListActions
+          sourceName={list.name}
+          canClear={canDelete}
+          duplicateAction={duplicateList.bind(null, id)}
+          clearAction={clearListBookmarks.bind(null, id)}
         />
       )}
 

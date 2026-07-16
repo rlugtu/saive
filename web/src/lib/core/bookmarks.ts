@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { assertRole } from "@/lib/permissions";
 import { createListRecord } from "@/lib/lists";
+import { LIST_NAME_MAX } from "@/lib/core/lists";
 import { randomTagColor } from "@/lib/tag-colors";
 import { isTrustedIframeUrl } from "@/lib/video";
 
@@ -249,4 +250,70 @@ export async function toggleVisited(userId: string, bookmarkId: string) {
     data: { visited: !bookmark.visited },
   });
   return { listId: bookmark.listId };
+}
+
+/**
+ * Duplicate a list into a brand-new list owned by the acting user — requires
+ * membership (VIEWER+) on the source. The copy is fully independent: only the
+ * bookmarks (with their tags) are cloned. Members, invites, polls, and comments
+ * are NOT carried over, and the new list is private. Each cloned bookmark is its
+ * own row, so later edits/deletes on either list never affect the other. Tags are
+ * re-created as the acting user's own tags (fresh per-list colors). Returns the
+ * new list.
+ */
+export async function duplicateList(
+  userId: string,
+  sourceListId: string,
+  newName: string,
+) {
+  await assertRole(userId, sourceListId, "VIEWER");
+
+  const source = await prisma.list.findUnique({
+    where: { id: sourceListId },
+    select: {
+      name: true,
+      bookmarks: {
+        select: {
+          name: true,
+          description: true,
+          urls: true,
+          images: true,
+          notes: true,
+          location: true,
+          latitude: true,
+          longitude: true,
+          rating: true,
+          visited: true,
+          videoUrl: true,
+          videoType: true,
+          tags: { select: { tag: { select: { name: true } } } },
+        },
+      },
+    },
+  });
+  if (!source) throw new Error("List not found.");
+
+  const name =
+    newName.trim().slice(0, LIST_NAME_MAX) ||
+    `Copy of ${source.name}`.slice(0, LIST_NAME_MAX);
+
+  const newList = await createListRecord(userId, { name, isPublic: false });
+
+  for (const b of source.bookmarks) {
+    const { tags, ...fields } = b;
+    const bookmark = await prisma.bookmark.create({
+      data: { ...fields, listId: newList.id },
+    });
+    const tagNames = normalizeTagNames(tags.map((bt) => bt.tag.name));
+    await syncBookmarkTags(bookmark.id, userId, tagNames, newList.id);
+  }
+
+  return newList;
+}
+
+/** Delete every bookmark in a list (cascades tags/comments/poll options) — owner only. */
+export async function clearListBookmarks(userId: string, listId: string) {
+  await assertRole(userId, listId, "OWNER");
+  await prisma.bookmark.deleteMany({ where: { listId } });
+  return { listId };
 }
