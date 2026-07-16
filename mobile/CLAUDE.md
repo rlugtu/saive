@@ -57,7 +57,8 @@ react-native-reanimated 4 + gesture-handler, **`expo-haptics`** (tab-press feedb
 **`react-native-reorderable-list`** (drag-to-reorder lists on home; JS-only, builds on reanimated +
 gesture-handler), **expo-font + `@expo-google-fonts/*`**
 (Newsreader, Work Sans), `@expo/vector-icons` (tab icons — outline/filled pairs crossfaded by swipe
-position in the custom tab bar), **`expo-blur`** (frosted glass behind
+position in the custom tab bar, plus a red attention badge on the Friends tab from
+`client/notifications.tsx`), **`expo-blur`** (frosted glass behind
 the floating tab bar **and the status bar** — needs a native build to render; the pushed-screen
 header + status bar mask it with **`expo-linear-gradient` + `@react-native-masked-view/masked-view`**
 so the blur fades out gradually with no hard line), `expo-location`,

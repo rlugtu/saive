@@ -263,8 +263,10 @@ function SegmentedTabs({
               {it.label}
             </Text>
             {it.key === 'dms' && unread > 0 && (
-              <View className="items-center rounded-full bg-accent px-1.5 py-0.5">
-                <Text className="font-sans-semibold text-xs text-primary-ink">
+              <View
+                className="items-center rounded-full px-2 py-1"
+                style={{ backgroundColor: t.danger }}>
+                <Text className="font-sans-semibold text-sm text-white">
                   {unread}
                 </Text>
               </View>
@@ -292,6 +294,8 @@ function FriendCard({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
+  // Lists the friend is already a member of — shown disabled so they can't be re-invited.
+  const [sharedIds, setSharedIds] = useState<string[]>([]);
   const [role, setRole] = useState<InviteRole>('COLLABORATOR');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -310,8 +314,12 @@ function FriendCard({
         friendId: friend.friend.id,
         listIds: ownedLists.map((m) => m.list.id),
       });
-      setSelected(ids);
+      // Already-shared lists are shown disabled (not pre-selected) — the user only picks
+      // *new* lists to add the friend to.
+      setSharedIds(ids);
+      setSelected([]);
     } catch {
+      setSharedIds([]);
       setSelected([]);
     }
   }
@@ -399,6 +407,21 @@ function FriendCard({
             <>
               <View className="flex-row flex-wrap gap-2">
                 {ownedLists.map((m) => {
+                  const shared = sharedIds.includes(m.list.id);
+                  // Already-shared lists render dimmed + checked and can't be toggled.
+                  if (shared) {
+                    return (
+                      <View
+                        key={m.list.id}
+                        className="flex-row items-center gap-1.5 rounded-skin-sm border-skin border-border bg-panel px-2 py-1 opacity-50">
+                        <Ionicons name="checkmark" size={14} color={t.muted} />
+                        <Text className="text-ink">{m.list.icon}</Text>
+                        <Text className="text-sm text-ink" numberOfLines={1}>
+                          {m.list.name}
+                        </Text>
+                      </View>
+                    );
+                  }
                   const on = selected.includes(m.list.id);
                   return (
                     <Pressable
@@ -420,23 +443,26 @@ function FriendCard({
                   <Pressable
                     key={r}
                     onPress={() => setRole(r)}
-                    className={`flex-1 items-center rounded-skin border py-2 ${
+                    className={`flex-1 items-center rounded-skin border py-1.5 ${
                       role === r ? 'border-primary bg-primary' : 'border-border'
                     }`}>
-                    <Text className={role === r ? 'text-primary-ink' : 'text-ink'}>
+                    <Text
+                      className={`text-sm ${role === r ? 'text-primary-ink' : 'text-ink'}`}>
                       {r === 'VIEWER' ? 'Viewer' : 'Collaborator'}
                     </Text>
                   </Pressable>
                 ))}
               </View>
               <Pressable
-                className="items-center rounded-skin bg-primary py-3"
-                disabled={busy}
+                className={`items-center rounded-skin bg-primary py-2 ${
+                  selected.length === 0 ? 'opacity-50' : ''
+                }`}
+                disabled={busy || selected.length === 0}
                 onPress={submit}>
                 {busy ? (
                   <ActivityIndicator color={THEME_TOKENS[theme].primaryInk} />
                 ) : (
-                  <Text className="font-sans-semibold text-primary-ink">
+                  <Text className="font-sans-semibold text-sm text-primary-ink">
                     Send requests
                   </Text>
                 )}

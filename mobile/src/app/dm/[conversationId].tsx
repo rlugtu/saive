@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,7 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -32,6 +33,10 @@ export default function DmThreadScreen() {
   const { theme } = useTheme();
   const t = THEME_TOKENS[theme];
   const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
+  // When the keyboard is up it already covers the home-indicator area, so the composer
+  // should sit flush on it; the bottom inset is only needed when the keyboard is hidden.
+  const [keyboardShown, setKeyboardShown] = useState(false);
   const { conversationId, handle } = useLocalSearchParams<{
     conversationId: string;
     handle?: string;
@@ -46,6 +51,17 @@ export default function DmThreadScreen() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const listRef = useRef<FlatList<Message>>(null);
+
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvt, () => setKeyboardShown(true));
+    const hide = Keyboard.addListener(hideEvt, () => setKeyboardShown(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const mergeNewest = useCallback((incoming: Message[]) => {
     setMessages((cur) => {
@@ -130,7 +146,7 @@ export default function DmThreadScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']} className="bg-bg">
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']} className="bg-bg">
       <Stack.Screen options={{ headerTitle: handle ?? 'Chat' }} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -180,7 +196,9 @@ export default function DmThreadScreen() {
         />
 
         {canSend ? (
-          <View className="flex-row items-center gap-2 border-t border-border px-3 py-2">
+          <View
+            className="flex-row items-center gap-2 border-t border-border px-3 py-2"
+            style={{ paddingBottom: 8 + (keyboardShown ? 0 : insets.bottom) }}>
             <TextInput
               className="flex-1 rounded-skin border-skin border-border bg-panel px-4 py-2.5 font-sans text-ink"
               placeholder="Message…"
@@ -201,7 +219,9 @@ export default function DmThreadScreen() {
             </Pressable>
           </View>
         ) : (
-          <View className="border-t border-border px-4 py-3">
+          <View
+            className="border-t border-border px-4 py-3"
+            style={{ paddingBottom: 12 + (keyboardShown ? 0 : insets.bottom) }}>
             <Text className="text-center text-sm text-muted">
               You&apos;re no longer friends — add them again to keep messaging.
             </Text>

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { trpc } from '@/client/api';
@@ -6,6 +7,21 @@ import BookmarkForm, { EMPTY_BOOKMARK } from '@/components/bookmark-form';
 import { ListPicker } from '@/components/list-picker';
 
 type Memberships = Awaited<ReturnType<typeof trpc.lists.mine.query>>;
+
+/**
+ * Compact top bar for the new-bookmark modal drawer — the page title lives here (in-content,
+ * like the rest of the app) with a Cancel to dismiss, in place of the empty chevron nav header.
+ */
+function DrawerTopBar({ onCancel }: { onCancel: () => void }) {
+  return (
+    <View className="flex-row items-center justify-between border-b border-border bg-bg px-4 pb-3 pt-4">
+      <Text className="font-serif text-xl text-ink">New Bookmark</Text>
+      <Pressable hitSlop={8} onPress={onCancel}>
+        <Text className="font-sans-medium text-primary">Cancel</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 /**
  * Create a bookmark. Two modes:
@@ -38,21 +54,17 @@ export default function NewBookmarkScreen() {
     }, [listId]),
   );
 
-  if (listId) {
-    return (
-      <BookmarkForm
-        initial={initial}
-        autofillOnMount={autofillOnMount}
-        submitLabel="Save bookmark"
-        onSubmit={async (data) => {
-          await trpc.bookmarks.create.mutate({ listId, data });
-          router.back();
-        }}
-      />
-    );
-  }
-
-  return (
+  const form = listId ? (
+    <BookmarkForm
+      initial={initial}
+      autofillOnMount={autofillOnMount}
+      submitLabel="Save bookmark"
+      onSubmit={async (data) => {
+        await trpc.bookmarks.create.mutate({ listId, data });
+        router.back();
+      }}
+    />
+  ) : (
     <BookmarkForm
       initial={initial}
       autofillOnMount={autofillOnMount}
@@ -92,5 +104,12 @@ export default function NewBookmarkScreen() {
         router.back();
       }}
     />
+  );
+
+  return (
+    <View style={{ flex: 1 }} className="bg-bg">
+      <DrawerTopBar onCancel={() => router.back()} />
+      {form}
+    </View>
   );
 }

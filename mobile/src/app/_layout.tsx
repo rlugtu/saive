@@ -93,7 +93,12 @@ function AppStack() {
       <Stack.Screen name="lists/new" options={{ ...opaqueModal }} />
       <Stack.Screen name="lists/edit" options={{ ...opaqueModal }} />
       <Stack.Screen name="bookmarks/[id]" options={{ ...blankTitle }} />
-      <Stack.Screen name="bookmarks/new" options={{ ...opaqueModal }} />
+      {/* The new-bookmark drawer draws its own compact "New Bookmark" top bar (with a
+          Cancel action) inside the modal, so it hides the empty chevron-only nav header. */}
+      <Stack.Screen
+        name="bookmarks/new"
+        options={{ presentation: 'modal', headerShown: false }}
+      />
       <Stack.Screen name="bookmarks/edit" options={{ ...opaqueModal }} />
       <Stack.Screen name="polls/index" options={{ ...blankTitle }} />
       <Stack.Screen name="polls/new" options={{ ...opaqueModal }} />
