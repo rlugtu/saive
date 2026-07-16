@@ -13,6 +13,7 @@
     "@better-auth/expo": "^1.6.23",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@supabase/supabase-js": "^2.110.6",
     "@trpc/server": "^11.18.0",
     "better-auth": "^1.6.23",
     "clsx": "^2.1.1",
