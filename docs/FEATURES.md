@@ -47,6 +47,10 @@ with a link or a location.
   your friends list, with an inbox that flags unread chats. Conversations load instantly and new
   messages arrive in real time. Delete a chat to clear it from your side; if the friendship ends the
   history stays readable but you can't send until you're friends again.
+- **Chat inside a list.** Every list has its own **group chatroom** — tap the chat icon in the list
+  header (it shows a badge when there's something new) to open a live thread where everyone on the list
+  can talk. Each message shows who sent it and their role, so you know at a glance who's a collaborator
+  vs. a viewer. Only the owner can wipe the history.
 - **Show off a profile.** Everyone has a profile page with their photo/icon, stats, and public
   lists — visit a friend's or a list owner's profile and add them as a friend right there.
 - **Comment together.** Leave comments on lists and individual bookmarks to plan and discuss.
@@ -166,6 +170,7 @@ never trapped on the wrong screen.
 | Sharing & permissions | ✅ | ✅ | Owner / Collaborator / Viewer; **request-based** invites (invitee approves/rejects) |
 | Friends | ✅ | ✅ | Add by **@handle** (request + accept); bulk-add a friend to your lists |
 | Direct messages | ✅ | ✅ | Friends-only 1:1 chat; Friends\|Messages tab switch + unread badge; paginated history; near-real-time (Supabase Realtime, polling fallback); per-user clear/delete; unfriend keeps history but blocks sending (`dms.*`) |
+| List chatrooms | ✅ | ✅ | Per-list group chat for all members; header chat icon + unread badge → slide-up drawer (web) / 70% bottom sheet (mobile); sender @handle + soft role suffix; near-real-time (`chat:list:<id>`, polling fallback); paginated history; members-only, owner-only clear = hard-delete (`listChat.*`) |
 | User profiles | ✅ | ✅ | `/users/[handle]` (web) · Profile tab + `users/[handle]` (mobile), resolvable by @handle or id; identity + stats + public lists + add-friend (`profile.get`) |
 | Comments (lists & bookmarks) | ✅ | ✅ | |
 | Polls | ✅ | ✅ | Create / vote / edit / delete |
@@ -397,6 +402,29 @@ thread (`DmThread`); shared `FriendsTabs` tab header. Interactive islands read/w
 `src/app/dm/new.tsx`, consuming the `dms.*` tRPC procedures; realtime via `src/client/realtime.ts`.
 **Differences.** UI only — web uses separate routes for the inbox/thread with a tab header; mobile uses
 an in-screen segmented switch + pushed thread screens. All logic (`dms.*` / `core/dms`) is shared.
+
+### List chatrooms
+**Description.** Every list has one **group chatroom** shared by all its members (owner +
+collaborators + viewers). A **chat icon** in the list header — carrying an **unread badge** (same
+behavior as the nav badges) — opens the room: a **slide-up drawer** on web / a **70%-height bottom
+sheet** on mobile, styled like a DM thread. Members read and post; each message shows the sender's
+**@handle** with a soft **role suffix** (`· owner|collaborator|viewer`, muted text). History loads
+oldest→newest with **Load older** (keyset pagination) and new messages arrive **near-instantly**
+(Supabase Realtime content-free ping on `chat:list:<id>`, all data over authenticated tRPC/actions,
+**degrades to polling** when unconfigured). The chatroom is **members-only** — a public list's
+non-member viewers never see the chat icon and can't read/post. Only the **owner** can **clear**,
+which **hard-deletes every message for everyone** (no soft/per-user clear, unlike DMs). Also on the
+list header: the **New bookmark** button moved onto the list-name row (louder styling, before the
+⋮ actions) and the chat icon took its former top-header slot.
+**Web.** `ListChatLauncher` (`components/lists/ListChatLauncher.tsx`) renders the header icon + badge
+and a Framer-Motion slide-up drawer; it reads/writes through `lib/actions/list-chat.ts` server actions
+(web has no browser tRPC client); realtime via `lib/realtime/client.ts` (`subscribeListChat`). The
+moved New-bookmark button lives in `ListToolbar`.
+**Mobile.** A chat icon in the list screen's `headerRight` (`src/app/lists/[id].tsx`) opens
+`components/list-chat/list-chat-sheet.tsx` (a `@gorhom/bottom-sheet` modal at 70%), consuming the
+`listChat.*` tRPC procedures; realtime via `src/client/realtime.ts` (`subscribeListChat`).
+**Differences.** UI only — web slide-up drawer vs. mobile bottom sheet. All logic
+(`listChat.*` / `core/list-chat`) is shared.
 
 ### User profiles
 **Description.** Every user has a public **profile** — avatar (uploaded image, else emoji icon),

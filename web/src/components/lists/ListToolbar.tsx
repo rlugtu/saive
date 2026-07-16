@@ -9,15 +9,24 @@ import {
   type ReactNode,
 } from "react";
 import { ListForm, type ListDefaults } from "./ListForm";
+import { BookmarkForm } from "@/components/bookmarks/BookmarkForm";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { PixelButton } from "@/components/ui/PixelButton";
 import { PixelCard } from "@/components/ui/PixelCard";
 import { PixelInput } from "@/components/ui/PixelInput";
 import { FieldLabel } from "@/components/ui/FieldLabel";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { Copy, EllipsisVertical, Pencil, Trash2, Users } from "lucide-react";
+import { Copy, EllipsisVertical, Pencil, Plus, Trash2, Users } from "lucide-react";
 
-type Panel = "edit" | "duplicate" | "members" | "clear" | null;
+type Panel = "create" | "edit" | "duplicate" | "members" | "clear" | null;
+
+/** Bookmark-create data threaded to the toolbar's "New bookmark" panel (collaborator+). */
+export type CreateBookmarkProps = {
+  action: (formData: FormData) => void | Promise<void>;
+  tagSuggestions: string[];
+  listTags: string[];
+  tagColors: Record<string, string>;
+};
 
 type ToolbarProps = {
   sourceName: string;
@@ -35,6 +44,8 @@ type ToolbarProps = {
   /** Owner-only public/private control, rendered inside the edit panel. */
   visibilityChildren?: ReactNode;
   membersChildren?: ReactNode;
+  /** Collaborator+ — new-bookmark form data; when set, a louder "New bookmark" trigger shows. */
+  createBookmark?: CreateBookmarkProps;
 };
 
 type ToolbarState = ToolbarProps & {
@@ -74,8 +85,14 @@ export function ListToolbar({
   );
 }
 
-export function ListToolbarTriggers() {
-  const { canEdit, canManageMembers, canClear, panel, openPanel } = useToolbar();
+/**
+ * The toolbar trigger row placed beside the list title: a louder "New bookmark" button
+ * (collaborator+), an optional caller-supplied slot (the chat launcher), then Members + ⋮.
+ * The New bookmark button comes first, before the actions menu.
+ */
+export function ListToolbarTriggers({ slot }: { slot?: ReactNode } = {}) {
+  const { canEdit, canManageMembers, canClear, createBookmark, panel, openPanel } =
+    useToolbar();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -108,6 +125,21 @@ export function ListToolbarTriggers() {
 
   return (
     <div className="flex items-center gap-2">
+      {createBookmark && (
+        <PixelButton
+          variant="primary"
+          size="xs"
+          aria-label="New bookmark"
+          aria-expanded={panel === "create"}
+          onClick={() => openPanel("create")}
+        >
+          <Plus size={14} aria-hidden />
+          New bookmark
+        </PixelButton>
+      )}
+
+      {slot}
+
       {canManageMembers && (
         <PixelButton
           variant="secondary"
@@ -207,6 +239,8 @@ export function ListToolbarPanels() {
     clearAction,
     visibilityChildren,
     membersChildren,
+    createBookmark,
+    closePanel,
   } = useToolbar();
 
   if (!panel) return null;
@@ -214,6 +248,22 @@ export function ListToolbarPanels() {
 
   return (
     <div>
+      {panel === "create" && createBookmark && (
+        <PixelCard className="flex flex-col gap-4">
+          <PanelHeader title="New bookmark" />
+          <BookmarkForm
+            action={async (formData) => {
+              await createBookmark.action(formData);
+              closePanel();
+            }}
+            submitLabel="Create"
+            tagSuggestions={createBookmark.tagSuggestions}
+            existingTags={createBookmark.listTags}
+            tagColors={createBookmark.tagColors}
+          />
+        </PixelCard>
+      )}
+
       {panel === "edit" && (
         <PixelCard className="flex flex-col gap-4">
           <PanelHeader title="Edit list" />

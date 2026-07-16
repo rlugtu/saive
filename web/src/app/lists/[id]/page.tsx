@@ -12,9 +12,10 @@ import { addListComment } from "@/lib/actions/comments";
 import { CommentSection } from "@/components/comments/CommentSection";
 import type { BookmarkCardData } from "@/lib/types";
 import { ListPageHeader } from "@/components/lists/ListPageHeader";
+import type { CreateBookmarkProps } from "@/components/lists/ListToolbar";
+import { createBookmark as createBookmarkAction } from "@/lib/actions/bookmarks";
 import { PollsView } from "@/components/polls/PollsView";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
-import { CreateBookmarkPanel } from "@/components/bookmarks/CreateBookmarkPanel";
 import { ListBookmarks } from "@/components/bookmarks/ListBookmarks";
 
 export default async function ListPage({
@@ -37,6 +38,8 @@ export default async function ListPage({
   const showPolls = tab === "polls" && isMember;
 
   let content: ReactNode;
+  // When set (collaborator+ on the List tab), the header shows a "New bookmark" button.
+  let createBookmark: CreateBookmarkProps | undefined;
 
   if (showPolls) {
     const polls = await getListPolls(id);
@@ -66,6 +69,15 @@ export default async function ListPage({
       ...new Set(bookmarkRows.flatMap((b) => b.tags.map((bt) => bt.tag.name))),
     ].sort((a, b) => a.localeCompare(b));
 
+    if (canEdit) {
+      createBookmark = {
+        action: createBookmarkAction.bind(null, id),
+        tagSuggestions,
+        listTags,
+        tagColors,
+      };
+    }
+
     content = (
       <>
         {isMember && role !== "OWNER" && (
@@ -77,15 +89,6 @@ export default async function ListPage({
         )}
 
         <section className="flex flex-col gap-4">
-          {canEdit && (
-            <CreateBookmarkPanel
-              listId={id}
-              tagSuggestions={tagSuggestions}
-              listTags={listTags}
-              tagColors={tagColors}
-            />
-          )}
-
           {bookmarks.length === 0 ? (
             <p className="text-muted text-sm text-center">
               {canEdit
@@ -114,6 +117,7 @@ export default async function ListPage({
         access={access}
         userId={user.id}
         activeKey={showPolls ? "polls" : "list"}
+        createBookmark={createBookmark}
       />
       {content}
     </main>

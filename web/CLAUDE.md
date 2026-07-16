@@ -87,11 +87,16 @@ Run these from `web/` (the app no longer lives at the repo root).
   picked from location autocomplete have coordinates, so free-typed/legacy ones never appear (they
   show as an "N skipped" note).
 - Bookmark **images are hotlinked remote URLs** (can break if the source blocks hotlinking).
-- **DM realtime** (`core/dm-realtime.ts`): `sendMessage` posts a **content-free** ping (just the
-  conversation id) to Supabase Realtime's server broadcast REST endpoint (`SUPABASE_URL` /
-  `SUPABASE_ANON_KEY`) on public channels `dm:user:<recipientId>` + `dm:conv:<conversationId>`.
-  Clients treat it as "refetch now" and pull real data over the `dms.*` tRPC procedures / the
-  `lib/actions/dms.ts` server actions, so nothing sensitive rides the socket. Everything **degrades
-  to polling** when the Supabase env is unset. The browser subscriber lives in
-  `lib/realtime/client.ts` (`NEXT_PUBLIC_SUPABASE_*`). Note the DM thread/inbox are **client islands
-  that call server actions** (web has no browser tRPC client) — keep logic in `core/dms.ts`.
+- **DM & chatroom realtime** (`core/dm-realtime.ts`, `core/list-chat-realtime.ts`): a send posts a
+  **content-free** ping (just the conversation/list id) to Supabase Realtime's server broadcast REST
+  endpoint (`SUPABASE_URL` / `SUPABASE_ANON_KEY`) on public channels — DMs use `dm:user:<recipientId>`
+  + `dm:conv:<conversationId>`, **list chatrooms** use `chat:list:<listId>`. Clients treat it as
+  "refetch now" and pull real data over the `dms.*` / `listChat.*` tRPC procedures / the
+  `lib/actions/{dms,list-chat}.ts` server actions, so nothing sensitive rides the socket. Everything
+  **degrades to polling** when the Supabase env is unset. Browser subscribers live in
+  `lib/realtime/client.ts` (`subscribeDm` / `subscribeListChat`, `NEXT_PUBLIC_SUPABASE_*`). Note the
+  DM and chatroom UIs are **client islands that call server actions** (web has no browser tRPC
+  client) — keep logic in `core/dms.ts` / `core/list-chat.ts`. **List chatrooms** = one group chat
+  per list, shared by all members (owner/collab/viewer); reads/posts require membership; **owner-only
+  clear hard-deletes** every message (`ListChatMessage`); per-member unread via
+  `ListMembership.chatLastReadAt`.

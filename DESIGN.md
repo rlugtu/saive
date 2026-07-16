@@ -135,6 +135,13 @@ ConversationParticipant
 Message         id, conversationId, senderId, body, createdAt
                 — indexed on (conversationId, createdAt) for keyset pagination.
 
+ListChatMessage id, listId, senderId, body, createdAt
+                — a message in a list's group chatroom (shared by all the list's members;
+                  the list *is* the room, ListMembership the participant analogue). Indexed
+                  on (listId, createdAt) for keyset pagination. Owner-only clear hard-deletes
+                  rows. Per-member read state lives on ListMembership.chatLastReadAt (unread =
+                  messages from others newer than it).
+
 Bookmark        id, listId, name, description, urls (string[]),
                 images (string[]), notes, location, latitude?, longitude?,
                 rating (0–5), visited (bool), videoUrl, videoType,
@@ -177,7 +184,16 @@ PollVote        id, pollId, optionId, userId — unique per (optionId, userId); 
   (a.k.a. deleting) a chat sets the user's `clearedAt`, hiding it + its past messages from **them
   only**; a later message reappears the thread showing only messages after the clear. History
   **paginates** via a keyset cursor on `(createdAt, id)`.
-- Deleting a user cascades their friendships (both sides), conversation participation, and messages.
+- **List chatrooms** (`ListChatMessage`): every list has one group chatroom shared by all its
+  members (owner + collaborators + viewers). Reading and posting both require **membership** —
+  a public list's non-member viewers get no chat. Each message shows the sender's @handle with a
+  soft role suffix (owner/collaborator/viewer). Unread is derived per-member from
+  `ListMembership.chatLastReadAt`. Only the **owner** can **clear** the room, which **hard-deletes
+  every message** for everyone (no soft/per-user clear, unlike DMs). History **paginates** via a
+  keyset cursor on `(createdAt, id)`; delivery reuses the DM realtime pattern (content-free ping on
+  `chat:list:<id>` + polling fallback).
+- Deleting a user cascades their friendships (both sides), conversation participation, messages,
+  and their list-chat messages. Deleting a list cascades its chatroom messages.
 - Tags are user-scoped and shared across all of a user's lists (OR-matching in filters).
 - Deleting a list cascades its bookmarks, comments, memberships, invites, **and polls**.
 - Deleting a bookmark cascades its `BookmarkTag` links, comments, **and poll options** (each
@@ -205,6 +221,8 @@ PollVote        id, pollId, optionId, userId — unique per (optionId, userId); 
 | Add/accept/remove friends; add a friend to your lists | any signed-in user (self) | | |
 | Start a chat / send a DM | current friends only (live friendship re-checked per message) | | |
 | Read DM history / clear (delete) a chat | either participant (clear affects only you) | | |
+| Read & post in the list chatroom | ✓ | ✓ | ✓ |
+| Clear the list chatroom (hard-delete all messages) | ✓ | — | — |
 | Delete a comment | own + any on their list | own only | own only |
 | Reorder lists on **own** home page | ✓ | ✓ | ✓ |
 | Create a poll | ✓ | ✓ | — |
@@ -240,7 +258,7 @@ helper — never rely on UI gating alone. Read-only public access uses `assertCa
 | `/friends/dms/[conversationId]` | **Chat thread**: message history (older loads on demand via keyset cursor) + composer; composer is disabled with a note when you're no longer friends. Mobile equivalents: the DMs view is an in-screen tab on the Friends screen; threads are `/dm/[conversationId]` and `/dm/new`. |
 | `/nearby` | **Near me**: find geocoded bookmarks within a chosen radius of your current location, closest→farthest |
 | `/bookmarks/new` | **New bookmark**: standalone create flow; pick/create one or more target lists and add the bookmark independently to each. Reached from a **＋ Bookmark** item in the primary nav (web home header · mobile tab bar) |
-| `/lists/[id]` | Bookmarks in a list; filter/search within (incl. a **Show only unvisited** toggle above the search row); list-level comments; a rounded-pill **List \| Polls** tab bar (the Polls face renders inline at `?tab=polls` — header/details/tabs stay mounted) + owner **Members** button + a **⋮ actions menu** (Edit / Duplicate / Clear) on the list-name row |
+| `/lists/[id]` | Bookmarks in a list; filter/search within (incl. a **Show only unvisited** toggle above the search row); list-level comments; a rounded-pill **List \| Polls** tab bar (the Polls face renders inline at `?tab=polls` — header/details/tabs stay mounted). The list-name row carries a louder **New bookmark** button (collaborator+, before the actions) + owner **Members** button + a **⋮ actions menu** (Edit / Duplicate / Clear). A **chat icon** in the top header (with an unread badge) opens the **list chatroom** — a slide-up drawer (web) / 70%-height bottom sheet (mobile) with a DM-style group chat: members read + post (each message tagged with the sender's @handle + soft role suffix), owner can clear all history. |
 | `/lists/[id]/bookmarks/[bid]` | Bookmark detail: 8-bit layout, tag pills, comments newest-first; **← Back** returns to the previous page (list / nearby / search), falling back to the list on direct load |
 | `/lists/[id]?tab=polls` | Polls in a list (newest first, with status + counts); **New poll** for collaborators+; the **Polls** tab of the list view, rendered inline so `/lists/[id]`'s header/details/tab bar stay mounted. The legacy `/lists/[id]/polls` route redirects here. |
 | `/lists/[id]/polls/new` | Create a poll: fields + a searchable/tag-filterable bookmark option picker (≥2) |
@@ -318,6 +336,12 @@ The capabilities the app ships today. Product-level coverage (and web/mobile par
   disable the composer when you're no longer friends (history stays readable), and deliver new
   messages in near-real-time (Supabase Realtime broadcast, polling fallback). Clearing/deleting a
   chat only affects you; it reappears on the next incoming message showing only newer messages.
+- **List chatrooms** — every list has one **group chat** shared by all its members. A chat icon in
+  the list header (with an unread badge) opens a slide-up drawer (web) / 70%-height bottom sheet
+  (mobile) with a DM-style thread: members read + post, each message tagged with the sender's @handle
+  and a soft **role suffix** (owner/collaborator/viewer). Reuses the DM realtime pattern (content-free
+  `chat:list:<id>` ping, polling fallback) and keyset history pagination. Members-only (public
+  non-members get no chat); only the **owner** can clear, which hard-deletes all history for everyone.
 - **Profiles** (`/users/[handle]`, also resolvable by id) — identity (@handle, avatar/icon, "member
   since"), stats (public lists · friends), and the user's public lists, with an add-friend action on
   others' profiles.
@@ -494,6 +518,11 @@ release builds don't reliably persist `Secure` cookies. `auth.api.getSession()` 
 | `dms.send` | mutation | `{ conversationId, body }` | participant + **live friendship** (in core) | `core/dms.sendMessage` — returns `{ message }` or `{ error }`; bumps `lastMessageAt`, fires a realtime ping |
 | `dms.clear` | mutation | `{ conversationId }` | participant (self only) | `core/dms.clearConversation` — clears/deletes the thread for the caller |
 | `dms.markRead` | mutation | `{ conversationId }` | participant (self only) | `core/dms.markRead` |
+| `listChat.messages` | query | `{ listId, cursor?, limit? }` | member (in data access) | `getChatMessages` — keyset page (oldest→newest) + `nextCursor` + `canSend`; each message carries the sender's identity + role |
+| `listChat.unread` | query | `{ listId }` | member (0 for non-members) | `getChatUnreadCount` — drives the chat-icon badge |
+| `listChat.send` | mutation | `{ listId, body }` | **member** (in core) | `core/list-chat.sendChatMessage` — returns `{ message }` or `{ error }`; bumps sender read state, fires a realtime ping |
+| `listChat.clear` | mutation | `{ listId }` | **OWNER** (in core) | `core/list-chat.clearChat` — hard-deletes every message in the room |
+| `listChat.markRead` | mutation | `{ listId }` | member (self only) | `core/list-chat.markChatRead` |
 | `profile.update` | mutation | `ProfileInput` | self | `core.saveProfile` |
 | `profile.get` | query | `{ handleOrId }` | signed-in (public data only) | `getPublicProfile` — resolves by @handle or id; identity + public lists + friend count + viewer↔target friendship state |
 | `tags.mine` | query | – | user-scoped | `getUserTags` |
@@ -508,14 +537,15 @@ The external-service lookups (`places` — Mapbox, `metadata` — LinkPreview/Mi
 run server-side so mobile gets autocomplete/autofill/AI-extract without shipping any API keys; the
 secrets stay in `web/`'s env.
 
-**DM realtime:** new messages are delivered near-instantly via **Supabase Realtime broadcast** —
-already in-stack (Postgres is Supabase-hosted), which suits serverless (Vercel can't hold sockets)
-and better-auth (not Supabase Auth). The server posts a tiny **content-free ping** (just the
-conversation id) to public channels `dm:user:<recipientId>` and `dm:conv:<conversationId>`; clients
-treat it purely as a "refetch now" trigger and pull the actual data over the authenticated tRPC
-procedures above, so no message content rides the socket and a spoofed/missed ping is harmless. The
-whole path **degrades to polling** when the Supabase env vars are unset (`SUPABASE_URL` /
-`SUPABASE_ANON_KEY` server-side; `NEXT_PUBLIC_SUPABASE_*` / `EXPO_PUBLIC_SUPABASE_*` on the clients).
+**DM & chatroom realtime:** new messages are delivered near-instantly via **Supabase Realtime
+broadcast** — already in-stack (Postgres is Supabase-hosted), which suits serverless (Vercel can't
+hold sockets) and better-auth (not Supabase Auth). The server posts a tiny **content-free ping**
+(just the conversation/list id) to public channels — DMs use `dm:user:<recipientId>` and
+`dm:conv:<conversationId>`, list chatrooms use `chat:list:<listId>`; clients treat it purely as a
+"refetch now" trigger and pull the actual data over the authenticated tRPC procedures above, so no
+message content rides the socket and a spoofed/missed ping is harmless. The whole path **degrades to
+polling** when the Supabase env vars are unset (`SUPABASE_URL` / `SUPABASE_ANON_KEY` server-side;
+`NEXT_PUBLIC_SUPABASE_*` / `EXPO_PUBLIC_SUPABASE_*` on the clients).
 
 ---
 

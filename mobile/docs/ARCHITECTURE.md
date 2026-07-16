@@ -228,6 +228,15 @@ modal with `router.back()` (or `router.dismissAll()` after leaving a list).
   floating an inset above it. New messages arrive via `client/realtime.ts`
   (Supabase broadcast) or focus/interval polling. The DMs unread total drives the segment badge
   (`dms.unreadCount`, refreshed on focus + realtime).
+- **List chatrooms** — each list's screen (`app/lists/[id].tsx`) has a **chat icon in `headerRight`**
+  (with an unread badge from `listChat.unread`, kept live off `subscribeListChat` + polling) that
+  presents `components/list-chat/list-chat-sheet.tsx` — a `@gorhom/bottom-sheet` modal at a **70%**
+  snap point holding a DM-style group thread (`BottomSheetFlatList` + `BottomSheetTextInput`). It
+  loads history via `listChat.messages` (keyset **Load older**), sends via `listChat.send`, marks read
+  while open (`listChat.markRead`), tags each message with the sender's **@handle + soft role suffix**,
+  and — for the **owner** — offers **Clear** (`listChat.clear`, hard-deletes all). The former
+  `headerRight` **add-bookmark** action moved to the **list-name row** as a louder filled "New" button
+  (before the ⋮ actions); the chat icon took its place. Members-only.
 - **Friend requests** (`friend-requests.tsx`) — all incoming friend requests (`friends.list().incoming`)
   with accept/decline (`friends.accept`/`friends.decline`). Reached from a compact **Requests** pill
   below the Friends header — the trailing pill in a `justify-between` row.

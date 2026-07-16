@@ -19,7 +19,10 @@ add each other as **friends** (`/friends`, request + accept) and bulk-invite a f
 Friends can **direct-message** each other 1:1 (`/friends/dms`): a Friends|Messages tab switch, a DM
 inbox with unread badges, paginated history, near-real-time delivery (Supabase Realtime, polling
 fallback), and per-user clear/delete; sending requires a live friendship (unfriending stops new
-messages but history stays readable).
+messages but history stays readable). Every list also has a **group chatroom** shared by all its
+members — a header chat icon (with unread badge) opens a slide-up drawer (web) / bottom sheet (mobile)
+where members read + post (each message tagged with the sender's @handle + role); it reuses the DM
+realtime pattern, is **members-only**, and only the **owner** can clear it (a hard delete).
 Every user has a **profile** (`/users/[handle]`, also resolvable by id) showing their identity, stats,
 and public lists, with an add-friend action; reachable from a Profile nav button.
 Lists and bookmarks both support **comments**. Pasting a link auto-fills a bookmark from page metadata (and

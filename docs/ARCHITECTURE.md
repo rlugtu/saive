@@ -306,12 +306,12 @@ mobile-first** (see `mobile/docs/design.md`). Only palette/skin/font differ per 
 | LinkPreview | Primary link/photo/video unfurl for autofill | `core/metadata.ts` | `LINKPREVIEW_API_KEY`; YouTube via oEmbed |
 | Microlink | Fallback unfurler when LinkPreview key is unset or fails | `core/metadata.ts` | free tier is IP-rate-limited |
 | Anthropic | Autofill comprehension + caption → structured bookmark fields | `core/comprehend.ts` | `ANTHROPIC_API_KEY`; best-effort, degrades to raw metadata |
-| Supabase Realtime | Near-real-time direct-message delivery | server: `core/dm-realtime.ts` (broadcast); clients: `web` `lib/realtime/client.ts` + `mobile` `client/realtime.ts` (subscribe) | Content-free "refetch" ping only; data still flows over tRPC. `SUPABASE_*` / `NEXT_PUBLIC_SUPABASE_*` / `EXPO_PUBLIC_SUPABASE_*`; **degrades to polling** if unset |
+| Supabase Realtime | Near-real-time direct-message **and list-chatroom** delivery | server: `core/dm-realtime.ts` + `core/list-chat-realtime.ts` (broadcast); clients: `web` `lib/realtime/client.ts` + `mobile` `client/realtime.ts` (`subscribeDm` / `subscribeListChat`) | Content-free "refetch" ping only (`dm:*` / `chat:list:<id>`); data still flows over tRPC. `SUPABASE_*` / `NEXT_PUBLIC_SUPABASE_*` / `EXPO_PUBLIC_SUPABASE_*`; **degrades to polling** if unset |
 
 Most are reachable from mobile via their tRPC procedures — no keys leave web. The exception is
 Supabase Realtime: the server sends broadcasts (server key), but clients also **subscribe directly**
 to public broadcast channels using the public anon key/URL (safe — the socket only carries content-free
-pings; all real DM data comes back over authenticated tRPC).
+pings; all real DM/chatroom data comes back over authenticated tRPC).
 
 ---
 
