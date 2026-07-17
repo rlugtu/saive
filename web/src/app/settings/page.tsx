@@ -4,6 +4,7 @@ import { coerceTheme } from "@/lib/theme";
 import { updateProfile } from "@/lib/actions/profile";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 import { PixelCard } from "@/components/ui/PixelCard";
 import { PixelButton } from "@/components/ui/PixelButton";
 
@@ -55,6 +56,18 @@ export default async function SettingsPage() {
       </PixelCard>
 
       <PixelCard>
+        <h2 className="text-sm mb-4">Privacy</h2>
+        <p className="text-muted mb-4 text-sm">
+          Read how Klect collects, uses, and protects your data.
+        </p>
+        <Link href="/privacy">
+          <PixelButton variant="secondary" size="sm">
+            Privacy Policy →
+          </PixelButton>
+        </Link>
+      </PixelCard>
+
+      <PixelCard>
         <h2 className="text-sm mb-4">Account</h2>
         <p className="text-muted mb-1">
           Signed in as <span className="text-ink">@{user.handle}</span>
@@ -62,6 +75,8 @@ export default async function SettingsPage() {
         <p className="text-muted mb-4 text-sm">{user.email}</p>
         <SignOutButton />
       </PixelCard>
+
+      <DeleteAccountSection handle={user.handle ?? ""} />
     </main>
   );
 }

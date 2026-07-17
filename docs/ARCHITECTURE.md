@@ -227,7 +227,8 @@ src/app/_layout.tsx           root Stack + auth gate (login when signed out); re
   (tabs)/create.tsx           action-only tab: press intercepted → push /bookmarks/new (renders null)
   (tabs)/friends.tsx          friends + add-by-email; → friend-requests / pending-requests
   (tabs)/profile.tsx          own profile; settings gear → push /settings
-  settings.tsx                account + theme switcher (pushed route, reached from Profile gear)
+  settings.tsx                account + theme switcher + privacy link + danger zone (pushed route, reached from Profile gear)
+  delete-account.tsx          "Danger zone" account deletion; type-your-@handle to confirm → account.delete → sign out
   lists/[id].tsx              a list's bookmarks + tag filter + comments; List|Polls tabs + ⋮ actions menu (Edit/Members/Duplicate/Clear)
   lists/new.tsx  lists/edit.tsx  lists/members.tsx
   bookmarks/[id].tsx          bookmark detail + comments + video + edit/delete/visited
