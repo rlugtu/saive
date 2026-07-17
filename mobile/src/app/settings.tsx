@@ -3,8 +3,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 
 import { authClient, clearBearerToken } from '@/client/auth';
+import { API_URL } from '@/client/bearer-store';
 import { useTheme } from '@/theme/theme-provider';
 import { THEME_TOKENS, type ThemeName } from '@/theme/tokens';
 
@@ -31,8 +33,8 @@ export default function SettingsScreen() {
         contentContainerStyle={{
           padding: 16,
           paddingTop: headerHeight + 8,
-          paddingBottom: 32,
-          gap: 20,
+          paddingBottom: 40,
+          gap: 24,
         }}>
         <Text className="font-serif text-3xl text-ink">Settings</Text>
 
@@ -91,6 +93,19 @@ export default function SettingsScreen() {
           </View>
         )}
 
+        <View className="gap-2">
+          <Text className="text-sm uppercase text-muted">Privacy</Text>
+          <Pressable
+            onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/privacy`)}
+            className="flex-row items-center justify-between rounded-skin border-skin border-border bg-panel p-3">
+            <View className="flex-row items-center gap-3">
+              <Ionicons name="lock-closed-outline" size={22} color={t.primary} />
+              <Text className="text-base text-ink">Privacy Policy</Text>
+            </View>
+            <Ionicons name="open-outline" size={18} color={t.muted} />
+          </Pressable>
+        </View>
+
         <Pressable
           className="items-center rounded-skin border-skin border-border py-3"
           onPress={() => {
@@ -99,6 +114,20 @@ export default function SettingsScreen() {
           }}>
           <Text className="font-semibold text-danger">Sign out</Text>
         </Pressable>
+
+        <View className="gap-2">
+          <Text className="text-sm uppercase text-danger">Danger zone</Text>
+          <Pressable
+            onPress={() => router.push('/delete-account')}
+            style={{ borderColor: t.danger }}
+            className="flex-row items-center justify-between rounded-skin border-skin p-3">
+            <View className="flex-row items-center gap-3">
+              <Ionicons name="trash-outline" size={22} color={t.danger} />
+              <Text className="text-base text-danger">Delete account</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={t.danger} />
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

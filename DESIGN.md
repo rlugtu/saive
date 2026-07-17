@@ -265,8 +265,9 @@ helper — never rely on UI gating alone. Read-only public access uses `assertCa
 | `/lists/[id]/polls/[pollId]` | Poll detail: **Vote**/**Results** toggle; edit/delete for the creator or list owner |
 | `/lists/[id]/polls/[pollId]/edit` | Edit a poll (creator or list owner); reconciles options |
 | `/users/[handle]` | **Profile** (reachable by @handle or id): a user's identity (avatar/icon, @handle, member-since), stats (public lists · friends), their **public lists**, and an Add-friend action on others' profiles. Your own profile is linked from a **Profile** item in the primary nav; on your own profile a **settings gear** opens `/settings`. |
-| `/settings` | Edit profile/theme/icon; manage/leave shared lists; pending requests. Reached via the **gear icon on your own profile** (no longer a primary-nav item). Links to the share-sheet how-to. |
+| `/settings` | Edit profile/theme/icon; manage/leave shared lists; pending requests. Reached via the **gear icon on your own profile** (no longer a primary-nav item). Links to the share-sheet how-to and the privacy policy; hosts the **Danger zone** (delete account). |
 | `/settings/share-extension` | **"Share to Klect"** — a static, illustrated how-to for adding the iOS share extension to the system share sheet (four steps). Mirrored on mobile as the pushed `share-help` screen (iOS-only entry). |
+| `/privacy` | **Privacy policy** — a plain-language static page (data collected, use, sharing, retention/deletion, contact). **Public: no auth guard**, so it doubles as the App Store Connect privacy-policy URL. Mobile opens this same URL in an in-app browser from Settings. |
 | `/invite/[token]` | Accept an invite |
 
 **Home search bar behavior** (unified control):
@@ -528,6 +529,7 @@ release builds don't reliably persist `Secure` cookies. `auth.api.getSession()` 
 | `listChat.markRead` | mutation | `{ listId }` | member (self only) | `core/list-chat.markChatRead` |
 | `profile.update` | mutation | `ProfileInput` | self | `core.saveProfile` |
 | `profile.get` | query | `{ handleOrId }` | signed-in (public data only) | `getPublicProfile` — resolves by @handle or id; identity + public lists + friend count + viewer↔target friendship state |
+| `account.delete` | mutation | – | self | `core.deleteAccount` — permanently deletes the caller and everything they own; a single `prisma.user.delete` cascades to all owned rows (sessions, accounts, owned lists → bookmarks/comments/polls/chat, memberships, invites, tags, comments, polls, votes, friendships, DMs, list-chat). Idempotent. Irreversible |
 | `tags.mine` | query | – | user-scoped | `getUserTags` |
 | `nearby.find` | query | `{ lat, lon, radiusMiles, listIds }` | user-scoped | `core.findNearbyBookmarks` — each result carries `lat`/`lon` (for map pins) alongside `distanceMiles` |
 | `places.search` | query | `{ text, sessionToken }` | signed-in | `core/places.searchPlaces` |

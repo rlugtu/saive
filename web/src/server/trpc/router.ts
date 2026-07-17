@@ -8,6 +8,7 @@ import { friendsRouter } from "./routers/friends";
 import { dmsRouter } from "./routers/dms";
 import { listChatRouter } from "./routers/list-chat";
 import { profileRouter } from "./routers/profile";
+import { accountRouter } from "./routers/account";
 import { tagsRouter } from "./routers/tags";
 import { nearbyRouter } from "./routers/nearby";
 import {
@@ -32,6 +33,7 @@ export const appRouter = router({
   dms: dmsRouter,
   listChat: listChatRouter,
   profile: profileRouter,
+  account: accountRouter,
   tags: tagsRouter,
   nearby: nearbyRouter,
   places: placesRouter,

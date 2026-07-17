@@ -63,6 +63,8 @@ with a link or a location.
   (clean and minimal), and **Journal** (warm scrapbook) — each in light and dark.
 - **Use it anywhere.** Available as a web app (installable to your home screen) and a mobile app —
   where you can also **share links straight into Klect** from any other app.
+- **Stay in control of your data.** A plain-language privacy policy explains what's collected, and
+  you can **permanently delete your account** — and everything in it — at any time from Settings.
 
 ---
 
@@ -179,6 +181,8 @@ never trapped on the wrong screen.
 | Themes | ✅ | ✅ | All 6 both; **default differs** (web Modern Light · mobile Journal Light) |
 | Native share extension | ➖ | ✅ | Mobile-only, iOS (save a bookmark inside the OS share sheet) |
 | "Share to Klect" how-to | ✅ | ✅ | Illustrated setup walkthrough in Settings (mobile entry iOS-only) |
+| Privacy policy | ✅ | ✅ | Public `/privacy` page; linked from Settings (mobile opens it in an in-app browser) |
+| Account deletion | ✅ | ✅ | Settings "Danger zone"; type-to-confirm; permanently deletes the user + all owned data (`account.delete`) |
 | PWA install | ✅ | ➖ | Web-only (mobile is a native app) |
 | AI caption extraction | ✅ | ➖ | Web-only (`comprehend.caption`, Claude-backed) |
 
@@ -487,6 +491,32 @@ profile (`/users/[id]`).
 **Mobile.** `src/app/settings.tsx` (a pushed stack route, no longer a tab); reached via the settings
 gear on the Profile screen. Theme persisted to secure-store, applied locally.
 **Differences.** None.
+
+### Privacy policy
+**Description.** A plain-language privacy policy covering what data Klect collects, how it's used,
+who it's shared with (service providers + how sharing/public lists work), data retention &
+deletion, and a contact email. Written to satisfy the App Store privacy-page requirement.
+**Web.** Public route `web/src/app/privacy/page.tsx` — **no auth guard**, so anyone (incl. logged
+out) can read it and it serves as the App Store Connect privacy-policy URL. Linked from a "Privacy"
+card in Settings.
+**Mobile.** A "Privacy" row in Settings opens the same public web URL (`${API_URL}/privacy`) in an
+in-app browser via `expo-web-browser` — one source of truth for the copy, no drift.
+**Differences.** Web renders the page; mobile opens the web page in-app.
+
+### Account deletion
+**Description.** Permanently delete your account and **everything you own** — profile, lists,
+bookmarks, comments, polls, votes, tags, friendships, DMs, and list-chat messages. Lives in a
+separate **"Danger zone"** and requires **type-to-confirm** (type your exact @handle) so it can't be
+triggered by accident. Irreversible.
+**Backend.** `core.deleteAccount` (`web/src/lib/core/account.ts`) is a single `prisma.user.delete`
+— every `User` relation is `onDelete: Cascade`, so all owned rows go in one transaction. Exposed as
+`account.delete` (tRPC) and the `deleteAccountAction` server action.
+**Web.** `DeleteAccountSection` client component in `/settings`; on submit the action deletes and
+redirects to `/` (cascade-deleted sessions log the user out).
+**Mobile.** "Danger zone" row in Settings → pushed `delete-account` screen with the type-to-confirm
+field; on success calls `account.delete`, clears the bearer token, and signs out (root layout
+returns to the login screen).
+**Differences.** UI only — same backend on both.
 
 ### Themes
 **Description.** Selectable visual themes across three families — **Pixel** (retro 8-bit), **Modern**

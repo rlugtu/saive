@@ -122,7 +122,13 @@ keep a thin `"use server"` wrapper, and add a `protectedProcedure` in
   `src/app` / `src/components` / `src/client` / `src/theme` — **never `mobile/src/lib`**
   (reserved so it can't shadow web's server graph through the `@/*` alias fallback).
 - **Auth:** guard web RSC with `requireUser`/`requireOnboardedUser`; gate every mutation with
-  `assertRole` **inside `core`**; gate query procedures explicitly.
+  `assertRole` **inside `core`**; gate query procedures explicitly. The one deliberate exception is
+  `app/privacy/page.tsx` — a **public** page with **no** guard so it can serve as the App Store
+  Connect privacy-policy URL (mobile opens the same URL in an in-app browser).
+- **Account deletion:** `core.deleteAccount` is a single `prisma.user.delete` — every `User`
+  relation is `onDelete: Cascade`, so all owned rows go in one transaction. Exposed via the
+  `account.delete` procedure + `deleteAccountAction`; both web and mobile gate it behind a
+  type-your-@handle confirmation in the Settings "Danger zone".
 - **Types:** infer from Prisma/tRPC; don't hand-write DTOs. Mobile imports web's `AppRouter`
   as `import type` only.
 - **Naming:** kebab-case files in mobile (`bookmark-form.tsx`); domain-grouped folders in both.

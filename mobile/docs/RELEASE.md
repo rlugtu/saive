@@ -68,7 +68,13 @@ These are wrong/placeholder in the repo today and block a real production build:
 - [ ] **Metadata**: name, subtitle, description, keywords, category, support + marketing URLs.
 - [ ] **Screenshots** for required device sizes (6.7" required; add others as needed).
 - [ ] **App Privacy** nutrition label — declare location + account data collection.
-- [ ] **Privacy Policy URL** (hosted, required for review).
+- [x] **Privacy Policy URL** (hosted, required for review) — live at
+      **`https://klect.vercel.app/privacy`** (public, no login; `web/src/app/privacy/page.tsx`).
+      Paste this into App Store Connect → App Privacy → Privacy Policy URL. Also linked in-app from
+      Settings on both platforms.
+- [x] **Account deletion** (App Store requirement for apps with account creation) — Settings →
+      Danger zone → Delete account (type-your-@handle to confirm); permanently deletes the user and
+      all owned data via `account.delete`. Mention the in-app path in App Review notes.
 - [ ] **Age rating** questionnaire.
 - [ ] **Demo account** credentials in App Review notes (the app is auth-gated).
 - [ ] Bump version, submit for **App Review**, then release (manual or automatic).
