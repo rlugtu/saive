@@ -46,6 +46,9 @@ type Feature = {
   /** Maps to `public/marketing/<image>.png` — a bare phone screenshot. */
   image: string;
   alt: string;
+  /** Intrinsic pixel dimensions of the screenshot, for aspect-ratio/CLS. */
+  w: number;
+  h: number;
   eyebrow: string;
   title: React.ReactNode;
   /** Image sits on the left (reversed) or right of the copy. */
@@ -60,6 +63,8 @@ const FEATURES: Feature[] = [
   {
     image: "rich",
     alt: "Rich bookmark detail screen",
+    w: 1350,
+    h: 2760,
     eyebrow: "More than a link",
     reverse: true,
     title: (
@@ -78,6 +83,8 @@ const FEATURES: Feature[] = [
   {
     image: "smart",
     alt: "Share sheet autofill screen",
+    w: 1350,
+    h: 2760,
     eyebrow: "Paste and go",
     reverse: false,
     title: <>It fills itself in.</>,
@@ -98,6 +105,8 @@ const FEATURES: Feature[] = [
   {
     image: "nearby",
     alt: "Near me map screen",
+    w: 1350,
+    h: 2760,
     eyebrow: "Right place, right time",
     reverse: true,
     title: (
@@ -118,6 +127,8 @@ const FEATURES: Feature[] = [
   {
     image: "collab",
     alt: "List poll and voting screen",
+    w: 1350,
+    h: 2760,
     eyebrow: "Better together",
     reverse: false,
     title: (
@@ -137,6 +148,8 @@ const FEATURES: Feature[] = [
   {
     image: "devices",
     alt: "Klect on phone and tablet",
+    w: 1080,
+    h: 1350,
     eyebrow: "Everywhere you are",
     reverse: true,
     last: true,
@@ -157,15 +170,25 @@ const FEATURES: Feature[] = [
   },
 ];
 
-function PhoneFrame({ image, alt }: { image: string; alt: string }) {
+function PhoneFrame({
+  image,
+  alt,
+  w,
+  h,
+}: {
+  image: string;
+  alt: string;
+  w: number;
+  h: number;
+}) {
   return (
     <div className="flex min-w-[280px] flex-[1_1_320px] justify-center">
       <div className="w-full max-w-[320px] overflow-hidden rounded-[28px] shadow-[0_30px_60px_-20px_rgba(21,20,26,0.25)]">
         <Image
           src={`/marketing/${image}.png`}
           alt={alt}
-          width={1080}
-          height={1350}
+          width={w}
+          height={h}
           sizes="(max-width: 900px) 90vw, 320px"
           className="h-auto w-full"
         />
@@ -193,7 +216,14 @@ function FeatureSection({ feature }: { feature: Feature }) {
     </div>
   );
 
-  const art = <PhoneFrame image={feature.image} alt={feature.alt} />;
+  const art = (
+    <PhoneFrame
+      image={feature.image}
+      alt={feature.alt}
+      w={feature.w}
+      h={feature.h}
+    />
+  );
 
   return (
     <Reveal
@@ -258,8 +288,8 @@ export function LandingPage() {
             <Image
               src="/marketing/hero.png"
               alt="Klect lists screen"
-              width={1080}
-              height={1350}
+              width={1350}
+              height={2760}
               priority
               sizes="(max-width: 900px) 90vw, 340px"
               className="h-auto w-full"
