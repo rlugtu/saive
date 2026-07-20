@@ -246,7 +246,11 @@ function GradientFrame({
 
 function FeatureSection({ feature }: { feature: Feature }) {
   const copy = (
-    <div className="min-w-[320px] flex-[1_1_420px]">
+    <div
+      className={`min-w-[320px] flex-[1_1_420px] ${
+        feature.reverse ? "md:order-2" : ""
+      }`}
+    >
       <Eyebrow>{feature.eyebrow}</Eyebrow>
       <h2 className="mb-5 text-4xl font-extrabold leading-[1.1] tracking-[-0.02em]">
         {feature.title}
@@ -264,7 +268,11 @@ function FeatureSection({ feature }: { feature: Feature }) {
   );
 
   const art = (
-    <div className="flex min-w-[280px] flex-[1_1_360px] justify-center">
+    <div
+      className={`flex min-w-[280px] flex-[1_1_360px] justify-center ${
+        feature.reverse ? "md:order-1" : ""
+      }`}
+    >
       <GradientFrame
         image={feature.image}
         alt={feature.alt}
@@ -284,17 +292,8 @@ function FeatureSection({ feature }: { feature: Feature }) {
         feature.last ? "pb-24" : ""
       }`}
     >
-      {feature.reverse ? (
-        <>
-          {art}
-          {copy}
-        </>
-      ) : (
-        <>
-          {copy}
-          {art}
-        </>
-      )}
+      {copy}
+      {art}
     </Reveal>
   );
 }
@@ -336,7 +335,7 @@ export function LandingPage() {
           <WaitlistForm variant="hero" />
           <span className="text-sm text-[#8A8796]">iOS · Android · Web</span>
         </div>
-        <div className="flex min-w-[280px] flex-[1_1_380px] justify-center">
+        <div className="hidden min-w-[280px] flex-[1_1_380px] justify-center md:flex">
           <GradientFrame
             image="hero"
             alt="Klect lists screen"
