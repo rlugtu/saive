@@ -17,7 +17,7 @@ export function VisitedToggle({
         label={visited ? "✔ Visited" : "Mark visited"}
         pendingLabel="…"
         variant={visited ? "secondary" : "primary"}
-        size="sm"
+        size="md"
       />
     </form>
   );

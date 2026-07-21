@@ -199,9 +199,9 @@ export default function BookmarkScreen() {
 
           <Text className="font-serif text-3xl text-ink">{b.name}</Text>
 
-          <View className="flex-row items-center gap-3">
+          <View className="flex-row items-center justify-between">
             <RatingStars value={b.rating} onChange={setRating} />
-            <VisitedPill visited={b.visited} onToggle={toggleVisited} />
+            <VisitedPill visited={b.visited} onToggle={toggleVisited} size="md" />
           </View>
 
           {b.tags.length > 0 && (

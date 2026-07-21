@@ -78,7 +78,7 @@ export default async function BookmarkPage({
       <PixelCard className="flex flex-col gap-4">
         <div>
           <h1 className="text-xl text-primary break-words">{bookmark.name}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
             {canEdit ? (
               <>
                 <InlineRating bookmarkId={bookmark.id} value={bookmark.rating} />
