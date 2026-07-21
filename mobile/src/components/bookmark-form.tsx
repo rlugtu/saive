@@ -1,8 +1,10 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  InputAccessoryView,
   Keyboard,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -21,6 +23,9 @@ import type { RetrievedPlace } from '@web/lib/core/places';
 
 // Hard cap on the blocking autofill fetch so the loading overlay can never hang.
 const AUTOFILL_TIMEOUT_MS = 15000;
+
+// Ties the iOS "Done" keyboard accessory bar to the multiline Description field.
+const DESC_ACCESSORY_ID = 'bookmarkDescDone';
 
 // The exact `data` shape web's create/update procedures accept — no hand DTOs.
 export type BookmarkData = Parameters<
@@ -287,6 +292,10 @@ export default function BookmarkForm({
           gap: 12,
         }}
         keyboardShouldPersistTaps="handled"
+        // Let a downward drag/scroll dismiss the keyboard — the multiline Description keeps
+        // Enter as a newline, so there's no return-key dismissal; this + the iOS "Done" bar
+        // (below) give the user a way out. ('interactive' = drag over the keyboard on iOS.)
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         // Inset the scroll view by the keyboard (instead of shrinking the frame with a
         // KeyboardAvoidingView) so the focused field always scrolls into view above the
         // keyboard. Critical inside the fixed-height iOS share sheet, where a padding-based
@@ -363,9 +372,6 @@ export default function BookmarkForm({
             onAutofill={handleLocationAutofill}
           />
           <Text className="text-sm text-muted">
-            Pick a business to autofill its name & details.
-          </Text>
-          <Text className="text-sm text-muted">
             Adding a location makes it findable on Near me.
           </Text>
         </View>
@@ -385,6 +391,9 @@ export default function BookmarkForm({
           placeholder="Description"
           placeholderTextColor={muted}
           multiline
+          // Multiline keeps Enter as a newline, so there's no return-key dismissal — the iOS
+          // accessory bar (rendered below) gives a "Done" affordance to close the keyboard.
+          inputAccessoryViewID={DESC_ACCESSORY_ID}
           value={description}
           onChangeText={(text) => {
             descDirty.current = true;
@@ -449,6 +458,22 @@ export default function BookmarkForm({
           </View>
         </View>
       </Modal>
+
+      {/* iOS "Done" bar above the keyboard for the multiline Description field (which keeps
+          Enter as a newline, so there's no return-key dismissal). iOS-only — Android relies
+          on the ScrollView's drag-to-dismiss. */}
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID={DESC_ACCESSORY_ID}>
+          <View className="flex-row justify-end border-t border-border bg-panel px-4 py-2">
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => Keyboard.dismiss()}>
+              <Text className="font-sans-semibold text-primary">Done</Text>
+            </Pressable>
+          </View>
+        </InputAccessoryView>
+      )}
     </View>
   );
 }

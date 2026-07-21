@@ -249,9 +249,6 @@ export function BookmarkForm({
             initialLon={seedLon}
             onAutofill={handleLocationAutofill}
           />
-          <p className="text-muted text-sm">
-            Pick a business to autofill its name, photos &amp; details.
-          </p>
         </div>
       </section>
 

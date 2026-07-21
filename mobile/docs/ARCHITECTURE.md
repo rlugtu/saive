@@ -291,8 +291,10 @@ modal with `router.back()` (or `router.dismissAll()` after leaving a list).
   the Add button, action row, and comment composer are all hidden and a "Public · view only" note
   shows. (The owner's public/private control lives on the **edit** screen, not here.)
 - **Bookmark detail** (`bookmarks/[id].tsx`) — `bookmarks.get` (`{ bookmark, role } | null`): hero
-  photos (first image large + a horizontal thumbnail strip for the rest), rating, a **Mark visited**
-  toggle (optimistic `bookmarks.toggleVisited`), tags, description, tappable source URLs
+  photos (first image large + a horizontal thumbnail strip for the rest), a rating + **Mark visited**
+  toggle row (rating left-aligned, the visited pill right-aligned via `justify-between`; the pill
+  renders at its larger `size="md"` here vs. the form's default), the visited toggle being optimistic
+  (`bookmarks.toggleVisited`), tags, description, tappable source URLs
   (`Linking.openURL`), a 📍 location row that opens the address in the device maps app
   (`maps.apple.com` deep link with coords when present), notes, the bookmark `CommentsSection`, and a
   confirm-dialog **Delete**. Edit is a header-right pencil icon (Ionicons `create-outline`, centered
@@ -413,7 +415,10 @@ comma-separated; a leading `#` is stripped on input
 create duplicate tags. The scroll view uses `automaticallyAdjustKeyboardInsets` (not a
 `KeyboardAvoidingView`) so the focused field always sits above the keyboard — this is what keeps the
 form visible inside the fixed-height iOS share sheet, where the old padding-based avoider pushed it
-off-screen.
+off-screen. Because the multiline **Description** keeps Enter as a newline (no return-key dismissal),
+the scroll view sets `keyboardDismissMode` (`interactive` on iOS / `on-drag` on Android) so a
+downward drag closes the keyboard, and the Description field wires an iOS `InputAccessoryView` "Done"
+bar above the keyboard as an explicit dismiss affordance.
 
 - **`LocationInput`** (`components/location-input.tsx`) — Mapbox Search Box autocomplete via web's
   `places.search` / `places.retrieve` procedures (token stays server-side). Carries a **"Location"**
